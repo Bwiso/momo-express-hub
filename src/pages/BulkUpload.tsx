@@ -43,6 +43,19 @@ const BulkUpload = () => {
   const [batchName, setBatchName] = useState("");
   const { user, profile, role } = useAuth();
 
+  // Only initiators and super_admins can upload
+  if (role === "approver" || role === "auditor") {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <AlertTriangle size={40} className="text-warning mb-4" />
+        <h2 className="font-display text-xl font-bold">Access Restricted</h2>
+        <p className="text-sm text-muted-foreground mt-2">
+          Only Payment Initiators can upload CSV files. As a {role === "approver" ? "Payment Approver" : "Auditor"}, you can review and {role === "approver" ? "approve" : "view"} batches from the Batches page.
+        </p>
+      </div>
+    );
+  }
+
   const parseFile = useCallback((f: File) => {
     // Read raw content for storage
     const reader = new FileReader();
