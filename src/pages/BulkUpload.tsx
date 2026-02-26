@@ -111,7 +111,8 @@ const BulkUpload = () => {
           valid_records: validRows.length,
           error_records: errorRows.length,
           total_amount: totalAmount,
-          initiated_by: "John Mwale",
+          initiated_by: profile?.full_name || "Unknown",
+          initiator_user_id: user?.id,
           status: "pending",
         })
         .select()
