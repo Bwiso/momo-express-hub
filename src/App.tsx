@@ -13,6 +13,7 @@ import Batches from "./pages/Batches";
 import Reports from "./pages/Reports";
 import AuditLog from "./pages/AuditLog";
 import UserManagement from "./pages/UserManagement";
+import BatchDetail from "./pages/BatchDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
