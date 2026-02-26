@@ -108,7 +108,7 @@ const BulkUpload = () => {
       const errorRows = rows.filter((r) => r.error);
       const totalAmount = validRows.reduce((sum, r) => sum + r.amount, 0);
 
-      // Create batch
+      // Create batch with CSV content stored
       const { data: batch, error: batchError } = await supabase
         .from("batches")
         .insert({
@@ -122,6 +122,7 @@ const BulkUpload = () => {
           initiated_by: profile?.full_name || "Unknown",
           initiator_user_id: user?.id,
           status: "pending",
+          csv_content: rawCsvContent || null,
         })
         .select()
         .single();
@@ -152,10 +153,30 @@ const BulkUpload = () => {
         user_role: role || "initiator",
       });
 
-      toast.success(`Batch ${batch.batch_number} created with ${validRows.length} transactions`);
+      toast.success(`Batch ${batch.batch_number} created — triggering disbursements...`);
+
+      // Auto-approve and trigger disbursements for sandbox testing
+      await supabase.from("batches").update({
+        status: "approved",
+        approved_by: "Auto (Sandbox)",
+        approved_at: new Date().toISOString(),
+      }).eq("id", batch.id);
+
+      const { error: fnError } = await supabase.functions.invoke("process-disbursements", {
+        body: { batchId: batch.id },
+      });
+
+      if (fnError) {
+        console.error("Disbursement trigger error:", fnError);
+        toast.error("Batch created but disbursement processing failed to start.");
+      } else {
+        toast.success("Disbursements are now processing via MTN MoMo sandbox!");
+      }
+
       setFile(null);
       setValidated(false);
       setRows([]);
+      setRawCsvContent("");
     } catch (err: any) {
       toast.error(err.message || "Failed to submit batch");
     } finally {
