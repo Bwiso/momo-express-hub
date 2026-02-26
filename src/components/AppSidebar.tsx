@@ -7,11 +7,12 @@ import {
   Shield,
   Settings,
   LogOut,
-  Bell,
 } from "lucide-react";
 import Logo from "./Logo";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -26,6 +27,22 @@ const AppSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, role, signOut } = useAuth();
+
+  const canApprove = role === "approver" || role === "super_admin";
+
+  const { data: pendingCount } = useQuery({
+    queryKey: ["pending-batches-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("batches")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending");
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: canApprove,
+    refetchInterval: 15000,
+  });
 
   const handleLogout = async () => {
     await signOut();
@@ -56,6 +73,7 @@ const AppSidebar = () => {
       <nav className="flex-1 space-y-1 px-3 py-4">
         {visibleNav.map((item) => {
           const isActive = location.pathname === item.to;
+          const showBadge = item.to === "/batches" && canApprove && pendingCount && pendingCount > 0;
           return (
             <NavLink
               key={item.to}
@@ -68,7 +86,12 @@ const AppSidebar = () => {
               )}
             >
               <item.icon size={18} />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {showBadge && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">
+                  {pendingCount}
+                </span>
+              )}
             </NavLink>
           );
         })}
