@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Zap, Eye, EyeOff, Lock, Mail, User } from "lucide-react";
@@ -17,6 +17,17 @@ const Login = () => {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Handle email confirmation redirect — sign out the auto-session and prompt manual login
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && hash.includes("type=signup")) {
+      supabase.auth.signOut().then(() => {
+        toast.success("Email confirmed! Please sign in.");
+        window.history.replaceState(null, "", window.location.pathname);
+      });
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -28,7 +39,7 @@ const Login = () => {
           password,
           options: {
             data: { full_name: fullName },
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: window.location.origin + '/login',
           },
         });
         if (error) throw error;
