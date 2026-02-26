@@ -1,32 +1,53 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Zap, Eye, EyeOff, Lock, Mail, Smartphone } from "lucide-react";
+import { Zap, Eye, EyeOff, Lock, Mail, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Login = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState<"login" | "2fa">("login");
+  const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [otp, setOtp] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStep("2fa");
-  };
+    setLoading(true);
 
-  const handleVerify = () => {
-    navigate("/dashboard");
+    try {
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { full_name: fullName },
+            emailRedirectTo: window.location.origin,
+          },
+        });
+        if (error) throw error;
+        toast.success("Check your email for a confirmation link!");
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        navigate("/dashboard");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Authentication failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="flex min-h-screen">
-      {/* Left Panel - Branding */}
+      {/* Left Panel */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between bg-secondary p-12">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent">
@@ -55,7 +76,6 @@ const Login = () => {
           >
             Process thousands of MTN MoMo disbursements with enterprise-grade security and dual authorization.
           </motion.p>
-
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -74,18 +94,16 @@ const Login = () => {
             ))}
           </motion.div>
         </div>
-
         <p className="text-xs text-secondary-foreground/40">© 2026 ExpoPay. All rights reserved.</p>
       </div>
 
-      {/* Right Panel - Form */}
+      {/* Right Panel */}
       <div className="flex flex-1 items-center justify-center p-8">
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           className="w-full max-w-sm"
         >
-          {/* Mobile logo */}
           <div className="mb-8 flex items-center gap-2.5 lg:hidden">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent">
               <Zap className="h-5 w-5 text-accent-foreground" strokeWidth={2.5} />
@@ -95,103 +113,93 @@ const Login = () => {
             </span>
           </div>
 
-          {step === "login" ? (
-            <>
-              <div className="mb-6">
-                <h2 className="font-display text-xl font-bold">Welcome back</h2>
-                <p className="text-sm text-muted-foreground mt-1">Sign in to your ExpoPay account</p>
+          <div className="mb-6">
+            <h2 className="font-display text-xl font-bold">
+              {isSignUp ? "Create an account" : "Welcome back"}
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              {isSignUp ? "Sign up for ExpoPay" : "Sign in to your ExpoPay account"}
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {isSignUp && (
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <div className="relative">
+                  <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="fullName"
+                    type="text"
+                    placeholder="John Mwale"
+                    className="pl-9"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
+            )}
 
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
-                  <div className="relative">
-                    <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="you@company.com"
-                      className="pl-9"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      className="pl-9 pr-9"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-sm">
-                  <label className="flex items-center gap-2 text-muted-foreground">
-                    <input type="checkbox" className="rounded border-border" />
-                    Remember me
-                  </label>
-                  <a href="#" className="text-primary font-medium hover:underline">
-                    Forgot password?
-                  </a>
-                </div>
-
-                <Button type="submit" className="w-full">
-                  Sign In
-                </Button>
-              </form>
-
-              <p className="mt-6 text-center text-xs text-muted-foreground">
-                Account locked after 5 failed attempts · 30-min session timeout
-              </p>
-            </>
-          ) : (
-            <>
-              <div className="mb-6">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mb-4">
-                  <Smartphone size={22} className="text-primary" />
-                </div>
-                <h2 className="font-display text-xl font-bold">Two-Factor Authentication</h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Enter the 6-digit code sent to your registered phone number
-                </p>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <div className="relative">
+                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@company.com"
+                  className="pl-9"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
               </div>
+            </div>
 
-              <div className="space-y-6">
-                <InputOTP maxLength={6} value={otp} onChange={setOtp}>
-                  <InputOTPGroup className="gap-2 w-full justify-center">
-                    {[0, 1, 2, 3, 4, 5].map((i) => (
-                      <InputOTPSlot key={i} index={i} className="h-12 w-12 text-lg" />
-                    ))}
-                  </InputOTPGroup>
-                </InputOTP>
-
-                <Button onClick={handleVerify} className="w-full" disabled={otp.length < 6}>
-                  Verify & Continue
-                </Button>
-
-                <p className="text-center text-sm text-muted-foreground">
-                  Didn't receive the code?{" "}
-                  <button className="text-primary font-medium hover:underline">Resend</button>
-                </p>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  className="pl-9 pr-9"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
-            </>
+            </div>
+
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Please wait..." : isSignUp ? "Create Account" : "Sign In"}
+            </Button>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
+            <button
+              className="text-primary font-medium hover:underline"
+              onClick={() => setIsSignUp(!isSignUp)}
+            >
+              {isSignUp ? "Sign in" : "Sign up"}
+            </button>
+          </p>
+
+          {!isSignUp && (
+            <p className="mt-2 text-center text-xs text-muted-foreground">
+              A Super Admin must assign your role after signup.
+            </p>
           )}
         </motion.div>
       </div>
