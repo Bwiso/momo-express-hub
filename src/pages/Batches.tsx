@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const statusConfig: Record<string, { color: string; icon: React.ElementType }> = {
   pending: { color: "bg-warning/10 text-warning border-warning/20", icon: Clock },
@@ -20,6 +21,7 @@ const statusConfig: Record<string, { color: string; icon: React.ElementType }> =
 
 const Batches = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { user, profile, role } = useAuth();
   const canApprove = role === "approver" || role === "super_admin";
 
@@ -137,7 +139,7 @@ const Batches = () => {
                       </td>
                       <td className="px-5 py-3">
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => navigate(`/batches/${batch.id}`)}>
                             <Eye size={14} />
                           </Button>
                           {batch.status === "pending" && canApprove && (
