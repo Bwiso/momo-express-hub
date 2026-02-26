@@ -6,6 +6,7 @@ import { Eye, CheckCircle, XCircle, Clock, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tables } from "@/integrations/supabase/types";
+import { useAuth } from "@/contexts/AuthContext";
 
 const statusConfig: Record<string, { color: string; icon: React.ElementType }> = {
   pending: { color: "bg-warning/10 text-warning border-warning/20", icon: Clock },
@@ -19,6 +20,8 @@ const statusConfig: Record<string, { color: string; icon: React.ElementType }> =
 
 const Batches = () => {
   const queryClient = useQueryClient();
+  const { user, profile, role } = useAuth();
+  const canApprove = role === "approver" || role === "super_admin";
 
   const { data: batches, isLoading } = useQuery({
     queryKey: ["batches"],
@@ -33,10 +36,16 @@ const Batches = () => {
   });
 
   const updateStatus = useMutation({
-    mutationFn: async ({ id, status, batch_number }: { id: string; status: string; batch_number: string }) => {
+    mutationFn: async ({ id, status, batch_number, initiator_user_id }: { id: string; status: string; batch_number: string; initiator_user_id: string | null }) => {
+      // Enforce dual authorization: approver cannot be the same as initiator
+      if (status === "approved" && initiator_user_id === user?.id) {
+        throw new Error("You cannot approve a batch you initiated (dual authorization required)");
+      }
+
       const { error } = await supabase.from("batches").update({
         status,
-        approved_by: status === "approved" ? "Admin" : undefined,
+        approved_by: status === "approved" ? profile?.full_name : undefined,
+        approver_user_id: status === "approved" ? user?.id : undefined,
         approved_at: status === "approved" ? new Date().toISOString() : undefined,
       }).eq("id", id);
       if (error) throw error;
@@ -44,8 +53,8 @@ const Batches = () => {
       await supabase.from("audit_logs").insert({
         action: `${status === "approved" ? "Approved" : "Rejected"} batch ${batch_number}`,
         action_type: status === "approved" ? "approve" : "reject",
-        user_name: "Admin",
-        user_role: "Approver",
+        user_name: profile?.full_name || "Unknown",
+        user_role: role || "approver",
       });
     },
     onSuccess: (_, { status }) => {
@@ -115,13 +124,13 @@ const Batches = () => {
                           <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
                             <Eye size={14} />
                           </Button>
-                          {batch.status === "pending" && (
+                          {batch.status === "pending" && canApprove && (
                             <>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 className="h-7 w-7 p-0 text-success hover:text-success"
-                                onClick={() => updateStatus.mutate({ id: batch.id, status: "approved", batch_number: batch.batch_number })}
+                                onClick={() => updateStatus.mutate({ id: batch.id, status: "approved", batch_number: batch.batch_number, initiator_user_id: batch.initiator_user_id })}
                               >
                                 <CheckCircle size={14} />
                               </Button>
@@ -129,7 +138,7 @@ const Batches = () => {
                                 variant="ghost"
                                 size="sm"
                                 className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                                onClick={() => updateStatus.mutate({ id: batch.id, status: "cancelled", batch_number: batch.batch_number })}
+                                onClick={() => updateStatus.mutate({ id: batch.id, status: "cancelled", batch_number: batch.batch_number, initiator_user_id: batch.initiator_user_id })}
                               >
                                 <XCircle size={14} />
                               </Button>

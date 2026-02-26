@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { toast } from "sonner";
 import Papa from "papaparse";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ParsedRow {
   row: number;
@@ -39,6 +40,7 @@ const BulkUpload = () => {
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [batchName, setBatchName] = useState("");
+  const { user, profile, role } = useAuth();
 
   const parseFile = useCallback((f: File) => {
     Papa.parse(f, {
@@ -109,7 +111,8 @@ const BulkUpload = () => {
           valid_records: validRows.length,
           error_records: errorRows.length,
           total_amount: totalAmount,
-          initiated_by: "John Mwale",
+          initiated_by: profile?.full_name || "Unknown",
+          initiator_user_id: user?.id,
           status: "pending",
         })
         .select()
@@ -137,8 +140,8 @@ const BulkUpload = () => {
       await supabase.from("audit_logs").insert({
         action: `Uploaded batch ${batch.batch_number} (${validRows.length} records, ZMW ${totalAmount.toLocaleString()})`,
         action_type: "upload",
-        user_name: "John Mwale",
-        user_role: "Initiator",
+        user_name: profile?.full_name || "Unknown",
+        user_role: role || "initiator",
       });
 
       toast.success(`Batch ${batch.batch_number} created with ${validRows.length} transactions`);
