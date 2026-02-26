@@ -32,6 +32,7 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/upload" element={<BulkUpload />} />
               <Route path="/batches" element={<Batches />} />
+              <Route path="/batches/:batchId" element={<BatchDetail />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/audit" element={<AuditLog />} />
               <Route path="/users" element={<UserManagement />} />

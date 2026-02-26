@@ -139,7 +139,7 @@ const Batches = () => {
                       </td>
                       <td className="px-5 py-3">
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => navigate(`/batches/${batch.id}`)}>
                             <Eye size={14} />
                           </Button>
                           {batch.status === "pending" && canApprove && (
