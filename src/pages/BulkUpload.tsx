@@ -42,6 +42,7 @@ const BulkUpload = () => {
   const [submitting, setSubmitting] = useState(false);
   const [batchName, setBatchName] = useState("");
   const { user, profile, role } = useAuth();
+  const isRestricted = role === "approver" || role === "auditor";
 
   const parseFile = useCallback((f: File) => {
     // Read raw content for storage
@@ -169,6 +170,18 @@ const BulkUpload = () => {
   const errors = rows.filter((r) => r.error);
   const valid = rows.filter((r) => !r.error);
   const totalAmount = valid.reduce((sum, r) => sum + r.amount, 0);
+
+  if (isRestricted) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <AlertTriangle size={40} className="text-warning mb-4" />
+        <h2 className="font-display text-xl font-bold">Access Restricted</h2>
+        <p className="text-sm text-muted-foreground mt-2">
+          Only Payment Initiators can upload CSV files. As a {role === "approver" ? "Payment Approver" : "Auditor"}, you can review and {role === "approver" ? "approve" : "view"} batches from the Batches page.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
