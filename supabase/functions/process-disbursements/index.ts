@@ -72,7 +72,7 @@ async function transferFunds(
     },
     body: JSON.stringify({
       amount: txn.amount.toString(),
-      currency: "ZMW",
+      currency: targetEnvironment === "sandbox" ? "EUR" : "ZMW",
       externalId: txn.id,
       payee: { partyIdType: "MSISDN", partyId: txn.mobile_number },
       payerMessage: `Payment to ${txn.recipient_name}`,
