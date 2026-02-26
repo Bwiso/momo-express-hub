@@ -35,6 +35,7 @@ const downloadTemplate = (format: "csv") => {
 
 const BulkUpload = () => {
   const [file, setFile] = useState<File | null>(null);
+  const [rawCsvContent, setRawCsvContent] = useState<string>("");
   const [dragOver, setDragOver] = useState(false);
   const [validated, setValidated] = useState(false);
   const [rows, setRows] = useState<ParsedRow[]>([]);
