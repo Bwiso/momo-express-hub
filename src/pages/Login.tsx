@@ -39,7 +39,7 @@ const Login = () => {
           password,
           options: {
             data: { full_name: fullName },
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: window.location.origin + '/login',
           },
         });
         if (error) throw error;
