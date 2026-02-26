@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const statusConfig: Record<string, { color: string; icon: React.ElementType }> = {
   pending: { color: "bg-warning/10 text-warning border-warning/20", icon: Clock },
