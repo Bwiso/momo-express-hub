@@ -1,0 +1,2 @@
+UPDATE transactions SET status = 'pending', mtn_transaction_id = NULL, processed_at = NULL, error_message = NULL WHERE batch_id = 'f0d010b4-a50d-4a1d-9e98-062c045b47ed';
+UPDATE batches SET status = 'pending', approved_by = NULL, approver_user_id = NULL, approved_at = NULL WHERE id = 'f0d010b4-a50d-4a1d-9e98-062c045b47ed';

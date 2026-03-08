@@ -26,7 +26,6 @@ async function getOAuthToken(primaryKey: string, apiUser: string, apiKey: string
 async function provisionApiUser(primaryKey: string): Promise<{ apiUser: string; apiKey: string }> {
   const apiUser = crypto.randomUUID();
 
-  // Create API User
   const createRes = await fetch(`${MTN_BASE_URL}/v1_0/apiuser`, {
     method: "POST",
     headers: {
@@ -40,7 +39,6 @@ async function provisionApiUser(primaryKey: string): Promise<{ apiUser: string; 
     throw new Error(`Create API user failed: ${createRes.status} ${await createRes.text()}`);
   }
 
-  // Generate API Key
   const keyRes = await fetch(`${MTN_BASE_URL}/v1_0/apiuser/${apiUser}/apikey`, {
     method: "POST",
     headers: { "Ocp-Apim-Subscription-Key": primaryKey },
@@ -110,6 +108,23 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Helper to update DB and log errors
+async function dbUpdate(
+  supabase: ReturnType<typeof createClient>,
+  table: string,
+  data: Record<string, unknown>,
+  matchColumn: string,
+  matchValue: string,
+  context: string
+) {
+  const { error } = await supabase.from(table).update(data).eq(matchColumn, matchValue);
+  if (error) {
+    console.error(`[DB UPDATE FAILED] ${context}:`, JSON.stringify(error));
+    throw new Error(`DB update failed (${context}): ${error.message}`);
+  }
+  console.log(`[DB UPDATE OK] ${context}`);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -139,7 +154,7 @@ Deno.serve(async (req) => {
     console.log("OAuth token obtained");
 
     // Update batch status to processing
-    await supabase.from("batches").update({ status: "processing" }).eq("id", batchId);
+    await dbUpdate(supabase, "batches", { status: "processing" }, "id", batchId, `batch ${batchId} -> processing`);
 
     // Get all pending transactions for this batch
     const { data: transactions, error: txError } = await supabase
@@ -153,6 +168,8 @@ Deno.serve(async (req) => {
       throw new Error("No pending transactions found for this batch");
     }
 
+    console.log(`Found ${transactions.length} pending transactions`);
+
     let successCount = 0;
     let failCount = 0;
 
@@ -160,7 +177,7 @@ Deno.serve(async (req) => {
       try {
         // Update transaction to processing
         console.log(`[Txn ${txn.id}] Setting status to processing...`);
-        await supabase.from("transactions").update({ status: "processing" }).eq("id", txn.id);
+        await dbUpdate(supabase, "transactions", { status: "processing" }, "id", txn.id, `txn ${txn.id} -> processing`);
 
         // Initiate transfer
         console.log(`[Txn ${txn.id}] Initiating transfer to ${txn.mobile_number}, amount: ${txn.amount}...`);
@@ -187,43 +204,34 @@ Deno.serve(async (req) => {
 
         if (finalStatus === "completed") {
           console.log(`[Txn ${txn.id}] Marking as completed`);
-          await supabase
-            .from("transactions")
-            .update({
-              status: "completed",
-              mtn_transaction_id: referenceId,
-              processed_at: new Date().toISOString(),
-            })
-            .eq("id", txn.id);
+          await dbUpdate(supabase, "transactions", {
+            status: "completed",
+            mtn_transaction_id: referenceId,
+            processed_at: new Date().toISOString(),
+          }, "id", txn.id, `txn ${txn.id} -> completed`);
           successCount++;
         } else {
           console.log(`[Txn ${txn.id}] Marking as failed: ${reason || finalStatus}`);
-          await supabase
-            .from("transactions")
-            .update({
-              status: "failed",
-              mtn_transaction_id: referenceId,
-              error_message: reason || `Transfer status: ${finalStatus}`,
-              retry_count: txn.retry_count + 1,
-            })
-            .eq("id", txn.id);
+          await dbUpdate(supabase, "transactions", {
+            status: "failed",
+            mtn_transaction_id: referenceId,
+            error_message: reason || `Transfer status: ${finalStatus}`,
+            retry_count: txn.retry_count + 1,
+          }, "id", txn.id, `txn ${txn.id} -> failed`);
           failCount++;
         }
 
-        // Rate limiting: ~10 req/s
+        // Rate limiting
         await sleep(100);
       } catch (txnError) {
         const errMsg = txnError instanceof Error ? txnError.message : "Unknown error";
         console.error(`[Txn ${txn.id}] FATAL ERROR:`, errMsg);
         try {
-          await supabase
-            .from("transactions")
-            .update({
-              status: "failed",
-              error_message: errMsg,
-              retry_count: txn.retry_count + 1,
-            })
-            .eq("id", txn.id);
+          await dbUpdate(supabase, "transactions", {
+            status: "failed",
+            error_message: errMsg,
+            retry_count: txn.retry_count + 1,
+          }, "id", txn.id, `txn ${txn.id} -> failed (error recovery)`);
         } catch (updateErr) {
           console.error(`[Txn ${txn.id}] Failed to update status after error:`, updateErr);
         }
@@ -233,15 +241,18 @@ Deno.serve(async (req) => {
 
     // Update batch final status
     const batchStatus = failCount === 0 ? "completed" : successCount === 0 ? "failed" : "partially_completed";
-    await supabase.from("batches").update({ status: batchStatus }).eq("id", batchId);
+    await dbUpdate(supabase, "batches", { status: batchStatus }, "id", batchId, `batch ${batchId} -> ${batchStatus}`);
 
     // Audit log
-    await supabase.from("audit_logs").insert({
+    const { error: auditErr } = await supabase.from("audit_logs").insert({
       action: `Processed disbursements for batch ${batchId}: ${successCount} success, ${failCount} failed`,
       action_type: "disburse",
       user_name: "System",
       user_role: "system",
     });
+    if (auditErr) console.error("Audit log insert failed:", auditErr);
+
+    console.log(`Batch ${batchId} complete: ${successCount} success, ${failCount} failed, status: ${batchStatus}`);
 
     return new Response(
       JSON.stringify({ success: true, processed: transactions.length, successCount, failCount, status: batchStatus }),
