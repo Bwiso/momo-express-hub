@@ -74,7 +74,7 @@ const Dashboard = () => {
       const { count: successCount } = await supabase
         .from("transactions")
         .select("*", { count: "exact", head: true })
-        .eq("status", "success");
+        .eq("status", "completed");
 
       const { count: pendingBatches } = await supabase
         .from("batches")
