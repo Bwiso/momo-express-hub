@@ -17,7 +17,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useMtnEnvironment } from "@/hooks/useMtnEnvironment";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
@@ -173,7 +173,8 @@ export function MobileSidebarTrigger() {
           <span className="sr-only">Toggle menu</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-64 p-0 bg-sidebar border-sidebar-border">
+      <SheetContent side="left" className="w-64 p-0 bg-sidebar border-sidebar-border" aria-describedby={undefined}>
+        <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
         <SidebarContent onNavigate={() => setOpen(false)} />
       </SheetContent>
     </Sheet>
