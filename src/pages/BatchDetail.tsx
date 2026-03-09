@@ -204,7 +204,7 @@ const BatchDetail = () => {
                       <td className="px-5 py-3 text-muted-foreground">{tx.row_number ?? "—"}</td>
                       <td className="px-5 py-3 font-medium">{tx.recipient_name}</td>
                       <td className="px-5 py-3 font-mono text-xs">{tx.mobile_number}</td>
-                      <td className="px-5 py-3 font-semibold">ZMW {tx.amount.toLocaleString()}</td>
+                      <td className="px-5 py-3 font-semibold">{currency} {tx.amount.toLocaleString()}</td>
                       <td className="px-5 py-3 text-muted-foreground text-xs">{tx.reference || "—"}</td>
                       <td className="px-5 py-3 font-mono text-xs">{tx.mtn_transaction_id || "—"}</td>
                       <td className="px-5 py-3">

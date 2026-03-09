@@ -185,7 +185,7 @@ const Batches = () => {
                       <td className="px-5 py-3 font-mono text-xs">{batch.batch_number}</td>
                       <td className="px-5 py-3 font-medium">{batch.name}</td>
                       <td className="px-5 py-3">{batch.valid_records.toLocaleString()}</td>
-                      <td className="px-5 py-3 font-semibold">ZMW {batch.total_amount.toLocaleString()}</td>
+                      <td className="px-5 py-3 font-semibold">{currency} {batch.total_amount.toLocaleString()}</td>
                       <td className="px-5 py-3 text-muted-foreground">{batch.initiated_by || "—"}</td>
                       <td className="px-5 py-3 text-muted-foreground">{new Date(batch.created_at).toLocaleDateString()}</td>
                       <td className="px-5 py-3">
