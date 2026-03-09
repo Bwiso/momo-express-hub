@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Settings as SettingsIcon, Activity, CheckCircle, XCircle, Loader2, Shield } from "lucide-react";
+import { Settings as SettingsIcon, Activity, CheckCircle, XCircle, Loader2, Shield, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
