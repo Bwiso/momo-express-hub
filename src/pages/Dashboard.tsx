@@ -35,6 +35,7 @@ const statusColor: Record<string, string> = {
 
 const Dashboard = () => {
   const [realtimeBatches, setRealtimeBatches] = useState<Tables<"batches">[]>([]);
+  const { currency } = useMtnEnvironment();
 
   // Fetch batches
   const { data: batches } = useQuery({
