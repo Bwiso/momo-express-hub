@@ -83,6 +83,39 @@ const Settings = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Environment Selector */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Environment Mode</label>
+              <Select value={selectedEnv} onValueChange={(v) => setSelectedEnv(v as "sandbox" | "production")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sandbox">
+                    <div className="flex flex-col items-start">
+                      <span>Sandbox</span>
+                      <span className="text-xs text-muted-foreground">Test API • EUR currency</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="production">
+                    <div className="flex flex-col items-start">
+                      <span>Production</span>
+                      <span className="text-xs text-muted-foreground">Live API • ZMW currency</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedEnv === "production" && (
+              <Alert className="border-warning bg-warning/10">
+                <AlertTriangle className="h-4 w-4 text-warning" />
+                <AlertDescription className="text-warning">
+                  Production mode uses real funds. Ensure all credentials are correctly configured.
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div className="grid gap-3 text-sm">
               <div className="flex items-center justify-between py-2 border-b border-border">
                 <span className="text-muted-foreground">Primary Key</span>
@@ -99,9 +132,15 @@ const Settings = () => {
                 </Badge>
               </div>
               <div className="flex items-center justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Environment</span>
+                <span className="text-muted-foreground">Active Environment</span>
+                <Badge variant={selectedEnv === "production" ? "destructive" : "outline"}>
+                  {selectedEnv}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-border">
+                <span className="text-muted-foreground">Currency</span>
                 <Badge variant="outline">
-                  {healthResult?.environment || "sandbox"}
+                  {selectedEnv === "production" ? "ZMW" : "EUR"}
                 </Badge>
               </div>
             </div>
