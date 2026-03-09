@@ -15,8 +15,16 @@ interface MtnConfig {
   isProduction: boolean;
 }
 
-function getMtnConfig(): MtnConfig {
-  const isProduction = Deno.env.get("MTN_ENVIRONMENT") === "production";
+async function getMtnConfig(supabase: ReturnType<typeof createClient>): Promise<MtnConfig> {
+  // Read environment from system_settings in database
+  const { data: settingRow } = await supabase
+    .from("system_settings")
+    .select("value")
+    .eq("key", "mtn_environment")
+    .single();
+
+  const isProduction = settingRow?.value === "production";
+
   const primaryKey = Deno.env.get("MTN_MOMO_PRIMARY_KEY");
   if (!primaryKey) throw new Error("MTN_MOMO_PRIMARY_KEY not configured");
 
@@ -179,13 +187,13 @@ Deno.serve(async (req) => {
     const { batchId } = await req.json();
     if (!batchId) throw new Error("batchId is required");
 
-    const config = getMtnConfig();
-    console.log(`Running in ${config.isProduction ? "PRODUCTION" : "SANDBOX"} mode`);
-    console.log(`Target: ${config.targetEnvironment}, Currency: ${config.currency}`);
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const config = await getMtnConfig(supabase);
+    console.log(`Running in ${config.isProduction ? "PRODUCTION" : "SANDBOX"} mode`);
+    console.log(`Target: ${config.targetEnvironment}, Currency: ${config.currency}`);
 
     // Get credentials (auto-provision for sandbox, read secrets for production)
     console.log(config.isProduction ? "Reading production credentials..." : "Provisioning sandbox API User...");
