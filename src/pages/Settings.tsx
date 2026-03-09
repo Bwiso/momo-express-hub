@@ -143,7 +143,13 @@ const Settings = () => {
             )}
 
             <Button
-              onClick={() => saveEnvMutation.mutate()}
+              onClick={() => {
+                if (selectedEnv === "production" && savedEnv !== "production") {
+                  setShowConfirmDialog(true);
+                } else {
+                  saveEnvMutation.mutate();
+                }
+              }}
               disabled={!hasChanges || saveEnvMutation.isPending}
               className="w-full"
               variant={hasChanges ? "default" : "secondary"}
