@@ -15,8 +15,16 @@ interface MtnConfig {
   isProduction: boolean;
 }
 
-function getMtnConfig(): MtnConfig {
-  const isProduction = Deno.env.get("MTN_ENVIRONMENT") === "production";
+async function getMtnConfig(supabase: ReturnType<typeof createClient>): Promise<MtnConfig> {
+  // Read environment from system_settings in database
+  const { data: settingRow } = await supabase
+    .from("system_settings")
+    .select("value")
+    .eq("key", "mtn_environment")
+    .single();
+
+  const isProduction = settingRow?.value === "production";
+
   const primaryKey = Deno.env.get("MTN_MOMO_PRIMARY_KEY");
   if (!primaryKey) throw new Error("MTN_MOMO_PRIMARY_KEY not configured");
 

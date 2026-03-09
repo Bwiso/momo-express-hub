@@ -1,4 +1,4 @@
-
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,8 +15,20 @@ interface MtnConfig {
   isProduction: boolean;
 }
 
-function getMtnConfig(): MtnConfig {
-  const isProduction = Deno.env.get("MTN_ENVIRONMENT") === "production";
+async function getMtnConfig(): Promise<MtnConfig> {
+  // Read environment from system_settings in database
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  const { data: settingRow } = await supabase
+    .from("system_settings")
+    .select("value")
+    .eq("key", "mtn_environment")
+    .single();
+
+  const isProduction = settingRow?.value === "production";
+
   const primaryKey = Deno.env.get("MTN_MOMO_PRIMARY_KEY");
   if (!primaryKey) throw new Error("MTN_MOMO_PRIMARY_KEY not configured");
 
@@ -98,11 +110,12 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Ensure requester is authenticated
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("Missing Authorization header");
 
-    const config = getMtnConfig();
+    const config = await getMtnConfig();
+    console.log(`Balance check running in ${config.isProduction ? "PRODUCTION" : "SANDBOX"} mode`);
+
     const { apiUser, apiKey } = await getCredentials(config);
     const token = await getOAuthToken(config, apiUser, apiKey);
 
