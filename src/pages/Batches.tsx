@@ -74,6 +74,10 @@ const Batches = () => {
         throw new Error("You cannot approve a batch you initiated (dual authorization required)");
       }
 
+      if (status === "approved" && isBalanceUnavailable) {
+        throw new Error("Cannot approve while wallet balance is unavailable. Retry in a moment.");
+      }
+
       if (status === "approved" && hasInsufficientBalance(total_amount)) {
         throw new Error(
           `Insufficient wallet balance. Required ${walletCurrency} ${total_amount.toLocaleString()}, available ${walletCurrency} ${availableBalance?.toLocaleString()}`,
