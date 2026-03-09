@@ -141,9 +141,9 @@ const Dashboard = () => {
   );
 
   const formatAmount = (amount: number) => {
-    if (amount >= 1000000) return `ZMW ${(amount / 1000000).toFixed(1)}M`;
-    if (amount >= 1000) return `ZMW ${(amount / 1000).toFixed(0)}K`;
-    return `ZMW ${amount.toLocaleString()}`;
+    if (amount >= 1000000) return `${currency} ${(amount / 1000000).toFixed(1)}M`;
+    if (amount >= 1000) return `${currency} ${(amount / 1000).toFixed(0)}K`;
+    return `${currency} ${amount.toLocaleString()}`;
   };
 
   const formatWalletBalance = () => {
