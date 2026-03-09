@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
@@ -32,6 +33,7 @@ const Settings = () => {
   const [healthResult, setHealthResult] = useState<HealthCheckResult | null>(null);
   const [selectedEnv, setSelectedEnv] = useState<"sandbox" | "production">("sandbox");
   const [hasChanges, setHasChanges] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   useEffect(() => {
     if (!envLoading) {
@@ -141,7 +143,13 @@ const Settings = () => {
             )}
 
             <Button
-              onClick={() => saveEnvMutation.mutate()}
+              onClick={() => {
+                if (selectedEnv === "production" && savedEnv !== "production") {
+                  setShowConfirmDialog(true);
+                } else {
+                  saveEnvMutation.mutate();
+                }
+              }}
               disabled={!hasChanges || saveEnvMutation.isPending}
               className="w-full"
               variant={hasChanges ? "default" : "secondary"}
@@ -261,6 +269,28 @@ const Settings = () => {
           </CardContent>
         </Card>
       </motion.div>
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Switch to Production Mode?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to switch to <strong>production mode</strong>. This means all disbursements will use <strong>real funds (ZMW)</strong> and connect to the live MTN MoMo API. This action cannot be undone without switching back manually.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => saveEnvMutation.mutate()}
+            >
+              Yes, switch to Production
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
