@@ -26,10 +26,13 @@ interface HealthCheckResult {
 const Settings = () => {
   const { role } = useAuth();
   const [healthResult, setHealthResult] = useState<HealthCheckResult | null>(null);
+  const [selectedEnv, setSelectedEnv] = useState<"sandbox" | "production">("sandbox");
 
   const healthCheckMutation = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("mtn-health-check");
+      const { data, error } = await supabase.functions.invoke("mtn-health-check", {
+        body: { environment: selectedEnv },
+      });
       if (error) throw error;
       return data as HealthCheckResult;
     },
