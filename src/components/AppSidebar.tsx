@@ -129,4 +129,22 @@ const AppSidebar = () => {
   );
 };
 
+
+function EnvironmentBadge() {
+  const { environment, isProduction } = useMtnEnvironment();
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+        isProduction
+          ? "bg-destructive/15 text-destructive border border-destructive/30"
+          : "bg-success/15 text-success border border-success/30"
+      )}
+    >
+      <span className={cn("h-1.5 w-1.5 rounded-full", isProduction ? "bg-destructive animate-pulse" : "bg-success")} />
+      {environment}
+    </span>
+  );
+}
+
 export default AppSidebar;
