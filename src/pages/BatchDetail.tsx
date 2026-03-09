@@ -137,7 +137,7 @@ const BatchDetail = () => {
             {batch.batch_number} — {batch.name}
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {batch.total_records} records · ZMW {batch.total_amount.toLocaleString()} · Initiated by {batch.initiated_by || "—"}
+            {batch.total_records} records · {currency} {batch.total_amount.toLocaleString()} · Initiated by {batch.initiated_by || "—"}
           </p>
         </div>
         <Badge variant="outline" className={`ml-auto ${batchStatusConfig[batch.status] || ""}`}>
