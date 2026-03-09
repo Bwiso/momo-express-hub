@@ -187,13 +187,13 @@ Deno.serve(async (req) => {
     const { batchId } = await req.json();
     if (!batchId) throw new Error("batchId is required");
 
-    const config = getMtnConfig();
-    console.log(`Running in ${config.isProduction ? "PRODUCTION" : "SANDBOX"} mode`);
-    console.log(`Target: ${config.targetEnvironment}, Currency: ${config.currency}`);
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const config = await getMtnConfig(supabase);
+    console.log(`Running in ${config.isProduction ? "PRODUCTION" : "SANDBOX"} mode`);
+    console.log(`Target: ${config.targetEnvironment}, Currency: ${config.currency}`);
 
     // Get credentials (auto-provision for sandbox, read secrets for production)
     console.log(config.isProduction ? "Reading production credentials..." : "Provisioning sandbox API User...");
