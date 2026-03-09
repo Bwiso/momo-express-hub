@@ -12,8 +12,9 @@ serve(async (req) => {
   }
 
   try {
+    const body = await req.json().catch(() => ({}));
     const primaryKey = Deno.env.get("MTN_MOMO_PRIMARY_KEY");
-    const targetEnv = Deno.env.get("MTN_TARGET_ENVIRONMENT") || "sandbox";
+    const targetEnv = body.environment || Deno.env.get("MTN_TARGET_ENVIRONMENT") || "sandbox";
 
     const results: {
       success: boolean;
