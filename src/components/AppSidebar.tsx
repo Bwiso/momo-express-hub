@@ -173,7 +173,8 @@ export function MobileSidebarTrigger() {
           <span className="sr-only">Toggle menu</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-64 p-0 bg-sidebar border-sidebar-border">
+      <SheetContent side="left" className="w-64 p-0 bg-sidebar border-sidebar-border" aria-describedby={undefined}>
+        <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
         <SidebarContent onNavigate={() => setOpen(false)} />
       </SheetContent>
     </Sheet>
