@@ -252,6 +252,14 @@ const BatchDetail = () => {
           </div>
         )}
       </motion.div>
+
+      {/* Timeline Sheet */}
+      <TransactionTimeline
+        transactionId={timelineTxId || ""}
+        batchId={batchId || ""}
+        open={!!timelineTxId}
+        onOpenChange={(open) => !open && setTimelineTxId(null)}
+      />
     </div>
   );
 };
