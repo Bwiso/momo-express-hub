@@ -33,6 +33,7 @@ const Settings = () => {
   const [healthResult, setHealthResult] = useState<HealthCheckResult | null>(null);
   const [selectedEnv, setSelectedEnv] = useState<"sandbox" | "production">("sandbox");
   const [hasChanges, setHasChanges] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   useEffect(() => {
     if (!envLoading) {
