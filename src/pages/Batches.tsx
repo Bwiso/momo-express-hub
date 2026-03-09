@@ -50,6 +50,7 @@ const Batches = () => {
 
   const availableBalance = walletBalance?.success ? walletBalance.availableBalance : null;
   const walletCurrency = walletBalance?.currency || "ZMW";
+  const isBalanceUnavailable = !walletBalance?.success;
 
   const hasInsufficientBalance = (amount: number) =>
     availableBalance !== null && amount > availableBalance;
