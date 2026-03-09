@@ -25,6 +25,7 @@ const Batches = () => {
   const navigate = useNavigate();
   const { user, profile, role } = useAuth();
   const canApprove = role === "approver" || role === "super_admin";
+  const { currency } = useMtnEnvironment();
 
   const { data: batches, isLoading } = useQuery({
     queryKey: ["batches"],
