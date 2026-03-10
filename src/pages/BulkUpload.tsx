@@ -128,9 +128,12 @@ const BulkUpload = () => {
         const seen = new Map<string, number>();
         const parsed: ParsedRow[] = results.data.map((raw: any, i: number) => {
           const name = (raw["Recipient Name"] || "").trim();
-          let phone = (raw["Mobile Number"] || "").trim().replace(/[\s\-\(\)]/g, "");
-          if (phone.startsWith("+")) phone = phone.slice(1);
+          // Strip ALL non-digit characters from phone, then normalize
+          let phone = (raw["Mobile Number"] || "").toString().replace(/\D/g, "");
+          // Handle local format: 09XXXXXXXX → 2609XXXXXXXX
           if (/^0\d{9}$/.test(phone)) phone = "260" + phone.slice(1);
+          // Handle double-zero international: 00260XXXXXXXXX → 260XXXXXXXXX
+          if (phone.startsWith("00260")) phone = phone.slice(2);
           const amountStr = (raw["Amount (ZMW)"] || raw["Amount"] || "0").toString().replace(/,/g, "");
           const amount = parseFloat(amountStr) || 0;
           const reference = (raw["Reference"] || "").trim();
@@ -138,7 +141,7 @@ const BulkUpload = () => {
 
           let error: string | undefined;
           if (!name) error = "Missing recipient name";
-          else if (!validatePhone(phone)) error = "Invalid mobile number (must be 260XXXXXXXXX)";
+          else if (!validatePhone(phone)) error = `Invalid mobile number "${phone}" (must be 260XXXXXXXXX)`;
           else if (amount < 1 || amount > 50000) error = "Amount must be ZMW 1–50,000";
           else if (seen.has(phone + amount)) error = `Duplicate entry (same as row ${seen.get(phone + amount)})`;
 
