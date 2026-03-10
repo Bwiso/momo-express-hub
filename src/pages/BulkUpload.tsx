@@ -389,7 +389,7 @@ const BulkUpload = () => {
                       <th className="px-5 py-3">Row</th>
                       <th className="px-5 py-3">Recipient Name</th>
                       <th className="px-5 py-3">Mobile Number</th>
-                      <th className="px-5 py-3">Amount (ZMW)</th>
+                      <th className="px-5 py-3">Amount ({currency})</th>
                       <th className="px-5 py-3">Status</th>
                     </tr>
                   </thead>
