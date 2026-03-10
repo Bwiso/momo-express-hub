@@ -388,6 +388,36 @@ const BatchDetail = () => {
         open={!!timelineTxId}
         onOpenChange={(open) => !open && setTimelineTxId(null)}
       />
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={!!confirmAction} onOpenChange={(open) => !open && setConfirmAction(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction === "approved" ? "Approve Batch?" : "Reject Batch?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction === "approved"
+                ? `This will approve batch ${batch?.batch_number} and trigger disbursements of ${currency} ${Number(batch?.total_amount).toLocaleString()} to ${batch?.total_records} recipients. This action cannot be undone.`
+                : `This will reject batch ${batch?.batch_number}. The batch will be cancelled and no payments will be processed.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={confirmAction === "approved" ? "bg-success text-success-foreground hover:bg-success/90" : "bg-destructive text-destructive-foreground hover:bg-destructive/90"}
+              onClick={() => {
+                if (confirmAction) {
+                  approveMutation.mutate({ status: confirmAction });
+                  setConfirmAction(null);
+                }
+              }}
+            >
+              {confirmAction === "approved" ? "Yes, Approve" : "Yes, Reject"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
