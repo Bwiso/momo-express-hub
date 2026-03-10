@@ -9,6 +9,17 @@ import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useMtnEnvironment } from "@/hooks/useMtnEnvironment";
+import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const statusConfig: Record<string, { color: string; icon: React.ElementType }> = {
   pending: { color: "bg-warning/10 text-warning border-warning/20", icon: Clock },
@@ -26,6 +37,7 @@ const Batches = () => {
   const { user, profile, role } = useAuth();
   const canApprove = role === "approver" || role === "super_admin";
   const { currency } = useMtnEnvironment();
+  const [confirmBatch, setConfirmBatch] = useState<{ batch: Tables<"batches">; status: "approved" | "cancelled" } | null>(null);
 
   const { data: batches, isLoading } = useQuery({
     queryKey: ["batches"],
@@ -211,21 +223,13 @@ const Batches = () => {
                                     toast.error("Wallet balance is unavailable right now. Please retry in a moment.");
                                     return;
                                   }
-
                                   if (insufficientBalance) {
                                     toast.error(
                                       `Insufficient wallet balance for ${batch.batch_number}. Required ${walletCurrency} ${Number(batch.total_amount).toLocaleString()}.`,
                                     );
                                     return;
                                   }
-
-                                  updateStatus.mutate({
-                                    id: batch.id,
-                                    status: "approved",
-                                    batch_number: batch.batch_number,
-                                    initiator_user_id: batch.initiator_user_id,
-                                    total_amount: Number(batch.total_amount),
-                                  });
+                                  setConfirmBatch({ batch, status: "approved" });
                                 }}
                               >
                                 <CheckCircle size={14} />
@@ -235,13 +239,7 @@ const Batches = () => {
                                 size="sm"
                                 className="h-7 w-7 p-0 text-destructive hover:text-destructive"
                                 disabled={updateStatus.isPending}
-                                onClick={() => updateStatus.mutate({
-                                  id: batch.id,
-                                  status: "cancelled",
-                                  batch_number: batch.batch_number,
-                                  initiator_user_id: batch.initiator_user_id,
-                                  total_amount: Number(batch.total_amount),
-                                })}
+                                onClick={() => setConfirmBatch({ batch, status: "cancelled" })}
                               >
                                 <XCircle size={14} />
                               </Button>
@@ -257,6 +255,42 @@ const Batches = () => {
           </div>
         )}
       </motion.div>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={!!confirmBatch} onOpenChange={(open) => !open && setConfirmBatch(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmBatch?.status === "approved" ? "Approve Batch?" : "Reject Batch?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmBatch?.status === "approved"
+                ? `This will approve batch ${confirmBatch?.batch.batch_number} and trigger disbursements of ${currency} ${Number(confirmBatch?.batch.total_amount).toLocaleString()} to ${confirmBatch?.batch.total_records} recipients. This action cannot be undone.`
+                : `This will reject batch ${confirmBatch?.batch.batch_number}. The batch will be cancelled and no payments will be processed.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={confirmBatch?.status === "approved" ? "bg-success text-success-foreground hover:bg-success/90" : "bg-destructive text-destructive-foreground hover:bg-destructive/90"}
+              onClick={() => {
+                if (confirmBatch) {
+                  updateStatus.mutate({
+                    id: confirmBatch.batch.id,
+                    status: confirmBatch.status,
+                    batch_number: confirmBatch.batch.batch_number,
+                    initiator_user_id: confirmBatch.batch.initiator_user_id,
+                    total_amount: Number(confirmBatch.batch.total_amount),
+                  });
+                  setConfirmBatch(null);
+                }
+              }}
+            >
+              {confirmBatch?.status === "approved" ? "Yes, Approve" : "Yes, Reject"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
