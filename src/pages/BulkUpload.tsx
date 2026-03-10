@@ -144,7 +144,7 @@ const BulkUpload = () => {
           let error: string | undefined;
           if (!name) error = "Missing recipient name";
           else if (!validatePhone(phone)) error = `Invalid mobile number "${phone}" (must be 260XXXXXXXXX)`;
-          else if (amount < 1 || amount > 50000) error = "Amount must be ZMW 1–50,000";
+          else if (amount < 1 || amount > 50000) error = `Amount must be ${currency} 1–50,000`;
           else if (seen.has(phone + amount)) error = `Duplicate entry (same as row ${seen.get(phone + amount)})`;
 
           if (!error) seen.set(phone + amount, i + 1);
