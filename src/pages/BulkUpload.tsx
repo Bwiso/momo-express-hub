@@ -53,6 +53,7 @@ const BulkUpload = () => {
   const [batchName, setBatchName] = useState("");
   const [validatingRecipients, setValidatingRecipients] = useState(false);
   const { user, profile, role } = useAuth();
+  const { currency } = useMtnEnvironment();
   const isRestricted = role === "approver" || role === "auditor";
 
   const runRecipientValidation = useCallback(async (parsedRows: ParsedRow[]) => {
