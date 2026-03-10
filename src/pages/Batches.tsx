@@ -63,7 +63,7 @@ const Batches = () => {
   });
 
   const availableBalance = walletBalance?.success ? walletBalance.availableBalance : null;
-  const walletCurrency = walletBalance?.currency || "ZMW";
+  const walletCurrency = walletBalance?.currency || currency;
   const isBalanceUnavailable = !walletBalance?.success;
 
   const hasInsufficientBalance = (amount: number) =>
