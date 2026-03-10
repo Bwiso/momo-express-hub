@@ -12,6 +12,16 @@ import { useState } from "react";
 import TransactionTimeline from "@/components/TransactionTimeline";
 import { useMtnEnvironment } from "@/hooks/useMtnEnvironment";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const txStatusConfig: Record<string, { color: string; icon: React.ElementType; label: string }> = {
   pending: { color: "bg-warning/10 text-warning border-warning/20", icon: Clock, label: "Pending" },
@@ -44,6 +54,7 @@ const BatchDetail = () => {
   const [refundingTxId, setRefundingTxId] = useState<string | null>(null);
   const [timelineTxId, setTimelineTxId] = useState<string | null>(null);
   const [csvOpen, setCsvOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<"approved" | "cancelled" | null>(null);
 
   const { data: batch, isLoading: batchLoading } = useQuery({
     queryKey: ["batch", batchId],
@@ -225,16 +236,16 @@ const BatchDetail = () => {
                 size="sm"
                 className="bg-success text-success-foreground hover:bg-success/90"
                 disabled={approveMutation.isPending || insufficientBalance || !!isBalanceUnavailable}
-                onClick={() => approveMutation.mutate({ status: "approved" })}
+                onClick={() => setConfirmAction("approved")}
               >
-                {approveMutation.isPending ? <Loader2 size={14} className="animate-spin mr-1" /> : <CheckCircle size={14} className="mr-1" />}
+                {approveMutation.isPending && confirmAction === "approved" ? <Loader2 size={14} className="animate-spin mr-1" /> : <CheckCircle size={14} className="mr-1" />}
                 Approve
               </Button>
               <Button
                 size="sm"
                 variant="destructive"
                 disabled={approveMutation.isPending}
-                onClick={() => approveMutation.mutate({ status: "cancelled" })}
+                onClick={() => setConfirmAction("cancelled")}
               >
                 <XCircle size={14} className="mr-1" /> Reject
               </Button>
@@ -377,6 +388,36 @@ const BatchDetail = () => {
         open={!!timelineTxId}
         onOpenChange={(open) => !open && setTimelineTxId(null)}
       />
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={!!confirmAction} onOpenChange={(open) => !open && setConfirmAction(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction === "approved" ? "Approve Batch?" : "Reject Batch?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction === "approved"
+                ? `This will approve batch ${batch?.batch_number} and trigger disbursements of ${currency} ${Number(batch?.total_amount).toLocaleString()} to ${batch?.total_records} recipients. This action cannot be undone.`
+                : `This will reject batch ${batch?.batch_number}. The batch will be cancelled and no payments will be processed.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={confirmAction === "approved" ? "bg-success text-success-foreground hover:bg-success/90" : "bg-destructive text-destructive-foreground hover:bg-destructive/90"}
+              onClick={() => {
+                if (confirmAction) {
+                  approveMutation.mutate({ status: confirmAction });
+                  setConfirmAction(null);
+                }
+              }}
+            >
+              {confirmAction === "approved" ? "Yes, Approve" : "Yes, Reject"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
