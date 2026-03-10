@@ -286,7 +286,7 @@ const BulkUpload = () => {
         <div className="flex-1">
           <p className="text-sm font-medium">Download Template</p>
           <p className="text-xs text-muted-foreground">
-            Required columns: Recipient Name, Mobile Number, Amount (ZMW), Reference, Description
+            Required columns: Recipient Name, Mobile Number, Amount ({currency}), Reference, Description
           </p>
         </div>
         <Button variant="outline" size="sm" className="gap-2" onClick={() => downloadTemplate("csv")}>
