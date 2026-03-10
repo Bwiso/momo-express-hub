@@ -368,7 +368,7 @@ const BulkUpload = () => {
                 <p className="text-xs text-muted-foreground">Warnings</p>
               </div>
               <div className="rounded-lg border border-border bg-card p-4 text-center">
-                <p className="text-2xl font-display font-bold">ZMW {totalAmount.toLocaleString()}</p>
+                <p className="text-2xl font-display font-bold">{currency} {totalAmount.toLocaleString()}</p>
                 <p className="text-xs text-muted-foreground">Batch Total</p>
               </div>
             </div>
