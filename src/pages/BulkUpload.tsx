@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import Papa from "papaparse";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useMtnEnvironment } from "@/hooks/useMtnEnvironment";
 
 interface ParsedRow {
   row: number;
@@ -30,8 +31,8 @@ interface RecipientValidationResult {
 
 const validatePhone = (phone: string) => /^260\d{9}$/.test(phone.replace(/\s/g, ""));
 
-const downloadTemplate = (format: "csv") => {
-  const header = "Recipient Name,Mobile Number,Amount (ZMW),Reference,Description";
+const downloadTemplate = (format: "csv", currency: string) => {
+  const header = `Recipient Name,Mobile Number,Amount (${currency}),Reference,Description`;
   const sample = "Grace Banda,260975123456,2500,REF001,January salary";
   const blob = new Blob([header + "\n" + sample], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
@@ -52,6 +53,7 @@ const BulkUpload = () => {
   const [batchName, setBatchName] = useState("");
   const [validatingRecipients, setValidatingRecipients] = useState(false);
   const { user, profile, role } = useAuth();
+  const { currency } = useMtnEnvironment();
   const isRestricted = role === "approver" || role === "auditor";
 
   const runRecipientValidation = useCallback(async (parsedRows: ParsedRow[]) => {
@@ -134,7 +136,7 @@ const BulkUpload = () => {
           if (/^0\d{9}$/.test(phone)) phone = "260" + phone.slice(1);
           // Handle double-zero international: 00260XXXXXXXXX → 260XXXXXXXXX
           if (phone.startsWith("00260")) phone = phone.slice(2);
-          const amountStr = (raw["Amount (ZMW)"] || raw["Amount"] || "0").toString().replace(/,/g, "");
+          const amountStr = (raw[`Amount (${currency})`] || raw["Amount (ZMW)"] || raw["Amount (EUR)"] || raw["Amount"] || "0").toString().replace(/,/g, "");
           const amount = parseFloat(amountStr) || 0;
           const reference = (raw["Reference"] || "").trim();
           const description = (raw["Description"] || "").trim();
@@ -142,7 +144,7 @@ const BulkUpload = () => {
           let error: string | undefined;
           if (!name) error = "Missing recipient name";
           else if (!validatePhone(phone)) error = `Invalid mobile number "${phone}" (must be 260XXXXXXXXX)`;
-          else if (amount < 1 || amount > 50000) error = "Amount must be ZMW 1–50,000";
+          else if (amount < 1 || amount > 50000) error = `Amount must be ${currency} 1–50,000`;
           else if (seen.has(phone + amount)) error = `Duplicate entry (same as row ${seen.get(phone + amount)})`;
 
           if (!error) seen.set(phone + amount, i + 1);
@@ -224,7 +226,7 @@ const BulkUpload = () => {
 
       // Log audit
       await supabase.from("audit_logs").insert({
-        action: `Uploaded batch ${batch.batch_number} (${validRows.length} records, ZMW ${totalAmount.toLocaleString()})`,
+        action: `Uploaded batch ${batch.batch_number} (${validRows.length} records, ${currency} ${totalAmount.toLocaleString()})`,
         action_type: "upload",
         user_name: profile?.full_name || "Unknown",
         user_role: role || "initiator",
@@ -284,10 +286,10 @@ const BulkUpload = () => {
         <div className="flex-1">
           <p className="text-sm font-medium">Download Template</p>
           <p className="text-xs text-muted-foreground">
-            Required columns: Recipient Name, Mobile Number, Amount (ZMW), Reference, Description
+            Required columns: Recipient Name, Mobile Number, Amount ({currency}), Reference, Description
           </p>
         </div>
-        <Button variant="outline" size="sm" className="gap-2" onClick={() => downloadTemplate("csv")}>
+        <Button variant="outline" size="sm" className="gap-2" onClick={() => downloadTemplate("csv", currency)}>
           <Download size={14} />
           CSV Template
         </Button>
@@ -366,7 +368,7 @@ const BulkUpload = () => {
                 <p className="text-xs text-muted-foreground">Warnings</p>
               </div>
               <div className="rounded-lg border border-border bg-card p-4 text-center">
-                <p className="text-2xl font-display font-bold">ZMW {totalAmount.toLocaleString()}</p>
+                <p className="text-2xl font-display font-bold">{currency} {totalAmount.toLocaleString()}</p>
                 <p className="text-xs text-muted-foreground">Batch Total</p>
               </div>
             </div>
@@ -387,7 +389,7 @@ const BulkUpload = () => {
                       <th className="px-5 py-3">Row</th>
                       <th className="px-5 py-3">Recipient Name</th>
                       <th className="px-5 py-3">Mobile Number</th>
-                      <th className="px-5 py-3">Amount (ZMW)</th>
+                      <th className="px-5 py-3">Amount ({currency})</th>
                       <th className="px-5 py-3">Status</th>
                     </tr>
                   </thead>

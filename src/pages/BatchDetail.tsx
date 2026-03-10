@@ -97,7 +97,7 @@ const BatchDetail = () => {
   });
 
   const availableBalance = walletBalance?.success ? walletBalance.availableBalance : null;
-  const walletCurrency = walletBalance?.currency || "ZMW";
+  const walletCurrency = walletBalance?.currency || currency;
   const isBalanceUnavailable = canApprove && batch?.status === "pending" && !walletBalance?.success;
 
   const hasInsufficientBalance = (amount: number) =>
