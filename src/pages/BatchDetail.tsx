@@ -422,7 +422,7 @@ const BatchDetail = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className={confirmAction === "approved" ? "bg-success text-success-foreground hover:bg-success/90" : "bg-destructive text-destructive-foreground hover:bg-destructive/90"}
+              className={confirmAction === "approved" ? (testMode ? "bg-warning text-warning-foreground hover:bg-warning/90" : "bg-success text-success-foreground hover:bg-success/90") : "bg-destructive text-destructive-foreground hover:bg-destructive/90"}
               onClick={() => {
                 if (confirmAction) {
                   approveMutation.mutate({ status: confirmAction });
