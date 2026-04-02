@@ -151,7 +151,7 @@ const BatchDetail = () => {
       queryClient.invalidateQueries({ queryKey: ["transactions", batchId] });
       queryClient.invalidateQueries({ queryKey: ["batches"] });
       queryClient.invalidateQueries({ queryKey: ["wallet-balance"] });
-      toast.success(status === "approved" ? "Batch approved — disbursements are now processing" : "Batch rejected successfully");
+      toast.success(status === "approved" ? (testMode ? "Batch approved — TEST MODE disbursements processing" : "Batch approved — disbursements are now processing") : "Batch rejected successfully");
     },
     onError: (err: Error) => toast.error(err.message),
   });
