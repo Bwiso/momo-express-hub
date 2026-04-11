@@ -128,7 +128,7 @@ const TransactionTimeline = ({
                           </div>
                         )}
                         {details?.error && (
-                          <div className="text-xs text-destructive mt-1 max-w-full truncate" title={String(details.error)}>
+                          <div className="text-xs text-destructive mt-1 whitespace-pre-wrap break-words">
                             Error: {String(details.error)}
                           </div>
                         )}

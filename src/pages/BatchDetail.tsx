@@ -451,6 +451,20 @@ const BatchDetail = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Error Detail Dialog */}
+      <Dialog open={!!selectedError} onOpenChange={(open) => !open && setSelectedError(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-destructive">Error Details</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh]">
+            <pre className="text-sm text-destructive whitespace-pre-wrap break-words font-mono bg-destructive/5 rounded-md p-4">
+              {selectedError}
+            </pre>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
