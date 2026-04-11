@@ -24,6 +24,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const txStatusConfig: Record<string, { color: string; icon: React.ElementType; label: string }> = {
   pending: { color: "bg-warning/10 text-warning border-warning/20", icon: Clock, label: "Pending" },
@@ -58,6 +65,7 @@ const BatchDetail = () => {
   const [csvOpen, setCsvOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"approved" | "cancelled" | null>(null);
   const [testMode, setTestMode] = useState(false);
+  const [selectedError, setSelectedError] = useState<string | null>(null);
 
   const { data: batch, isLoading: batchLoading } = useQuery({
     queryKey: ["batch", batchId],
@@ -359,8 +367,16 @@ const BatchDetail = () => {
                           {cfg.label}
                         </Badge>
                       </td>
-                      <td className="px-5 py-3 text-xs text-destructive max-w-[200px] truncate" title={tx.error_message || ""}>
-                        {tx.error_message || "—"}
+                      <td className="px-5 py-3 text-xs text-destructive max-w-[250px]">
+                        {tx.error_message ? (
+                          <button
+                            onClick={() => setSelectedError(tx.error_message)}
+                            className="text-left max-w-[250px] truncate block hover:underline cursor-pointer"
+                            title="Click to view full error"
+                          >
+                            {tx.error_message}
+                          </button>
+                        ) : "—"}
                       </td>
                       <td className="px-5 py-3 text-xs text-muted-foreground">
                         {tx.processed_at ? new Date(tx.processed_at).toLocaleString() : "—"}
