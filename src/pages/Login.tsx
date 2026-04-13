@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Zap, Eye, EyeOff, Lock, Mail, User } from "lucide-react";
+import { Zap, Eye, EyeOff, Lock, Mail, User, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +16,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [lockout, setLockout] = useState<{ locked: boolean; lockedUntil?: string; attempts: number }>({ locked: false, attempts: 0 });
 
   // Handle email confirmation redirect — sign out the auto-session and prompt manual login
   useEffect(() => {
@@ -27,6 +28,17 @@ const Login = () => {
       });
     }
   }, []);
+
+  const checkLockout = async () => {
+    if (!email) return;
+    const { data } = await supabase.rpc("check_login_lockout", { p_email: email });
+    const d = data as Record<string, any> | null;
+    if (d?.locked) {
+      setLockout({ locked: true, lockedUntil: d.locked_until, attempts: d.attempts });
+    } else {
+      setLockout({ locked: false, attempts: d?.attempts ?? 0 });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,8 +57,38 @@ const Login = () => {
         if (error) throw error;
         toast.success("Check your email for a confirmation link!");
       } else {
+        // Check lockout before attempting login
+        const { data: lockRaw } = await supabase.rpc("check_login_lockout", { p_email: email });
+        const lockData = lockRaw as Record<string, any> | null;
+        if (lockData?.locked) {
+          const until = new Date(lockData.locked_until);
+          const mins = Math.ceil((until.getTime() - Date.now()) / 60000);
+          setLockout({ locked: true, lockedUntil: lockData.locked_until, attempts: lockData.attempts });
+          toast.error(`Account locked. Try again in ${mins} minute${mins !== 1 ? "s" : ""}.`);
+          setLoading(false);
+          return;
+        }
+
         const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        if (error) {
+          // Record failed attempt
+          const { data: failRaw } = await supabase.rpc("record_failed_login", { p_email: email });
+          const failData = failRaw as Record<string, any> | null;
+          if (failData?.locked) {
+            setLockout({ locked: true, lockedUntil: failData.locked_until, attempts: failData.attempts });
+            toast.error("Too many failed attempts. Account locked for 15 minutes.");
+          } else {
+            const remaining = 5 - (failData?.attempts ?? 0);
+            setLockout({ locked: false, attempts: failData?.attempts ?? 0 });
+            toast.error(`Invalid credentials. ${remaining} attempt${remaining !== 1 ? "s" : ""} remaining.`);
+          }
+          setLoading(false);
+          return;
+        }
+
+        // Success — clear failed attempts
+        await supabase.rpc("clear_failed_logins", { p_email: email });
+        setLockout({ locked: false, attempts: 0 });
         navigate("/dashboard");
       }
     } catch (err: any) {
@@ -133,6 +175,25 @@ const Login = () => {
             </p>
           </div>
 
+          {lockout.locked && (
+            <div className="mb-4 flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              <ShieldAlert size={18} className="shrink-0" />
+              <span>
+                Account locked due to too many failed attempts. Try again in{" "}
+                {lockout.lockedUntil
+                  ? `${Math.max(1, Math.ceil((new Date(lockout.lockedUntil).getTime() - Date.now()) / 60000))} minutes`
+                  : "15 minutes"}.
+              </span>
+            </div>
+          )}
+
+          {!lockout.locked && lockout.attempts > 0 && !isSignUp && (
+            <div className="mb-4 flex items-center gap-2 rounded-lg border border-orange-300 bg-orange-50 p-3 text-sm text-orange-700 dark:border-orange-700 dark:bg-orange-950/30 dark:text-orange-400">
+              <ShieldAlert size={18} className="shrink-0" />
+              <span>{5 - lockout.attempts} login attempt{5 - lockout.attempts !== 1 ? "s" : ""} remaining before lockout.</span>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {isSignUp && (
               <div className="space-y-2">
@@ -192,8 +253,8 @@ const Login = () => {
               </div>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Please wait..." : isSignUp ? "Create Account" : "Sign In"}
+            <Button type="submit" className="w-full" disabled={loading || lockout.locked}>
+              {loading ? "Please wait..." : lockout.locked ? "Account Locked" : isSignUp ? "Create Account" : "Sign In"}
             </Button>
           </form>
 

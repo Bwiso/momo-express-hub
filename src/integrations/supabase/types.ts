@@ -115,6 +115,33 @@ export type Database = {
           },
         ]
       }
+      failed_login_attempts: {
+        Row: {
+          attempt_count: number
+          created_at: string
+          email: string
+          id: string
+          last_attempt_at: string
+          locked_until: string | null
+        }
+        Insert: {
+          attempt_count?: number
+          created_at?: string
+          email: string
+          id?: string
+          last_attempt_at?: string
+          locked_until?: string | null
+        }
+        Update: {
+          attempt_count?: number
+          created_at?: string
+          email?: string
+          id?: string
+          last_attempt_at?: string
+          locked_until?: string | null
+        }
+        Relationships: []
+      }
       organizations: {
         Row: {
           created_at: string
@@ -269,6 +296,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_login_lockout: { Args: { p_email: string }; Returns: Json }
+      clear_failed_logins: { Args: { p_email: string }; Returns: undefined }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -280,6 +309,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      record_failed_login: { Args: { p_email: string }; Returns: Json }
     }
     Enums: {
       app_role: "super_admin" | "initiator" | "approver" | "auditor"
