@@ -1,48 +1,41 @@
 
-Goal: make transaction error messages under Batches fully readable without breaking the table layout.
 
-Plan
+## Plan: Branded Auth Emails + Forgot Password Dialog
 
-1. Update the Batch Detail table error cell
-- Replace the current `max-w-[200px] truncate` rendering in `src/pages/BatchDetail.tsx`.
-- Keep a compact preview inside the table so rows stay aligned.
-- Add a clear “View error” interaction for long messages.
+### What we will build
 
-2. Add a full error viewer
-- Use the existing dialog component pattern already present in the project.
-- When a transaction has an error, open a modal showing the complete message in a scrollable, wrapped block (`whitespace-pre-wrap` / break-long-words style).
-- Preserve the raw backend error text exactly, including JSON fragments and line breaks where possible.
+**1. Forgot Password popup dialog**
+Replace the current inline "Forgot password?" button (which requires email to already be filled in the login form) with a proper Dialog popup:
+- Clicking "Forgot password?" opens a modal with its own email input field
+- User enters their email and clicks "Send Reset Link"
+- Shows loading state while sending, success/error feedback via toast
+- Can be used independently of the login form state
 
-3. Improve usability for short vs long errors
-- Short errors can remain directly readable in-cell.
-- Long errors should show:
-  - a short preview in the table
-  - full content in the dialog
-  - optional tooltip/title fallback for quick hover viewing
+**2. Custom branded auth email templates**
+Set up ExpoPay-branded email templates for password reset, signup confirmation, magic links, etc. This requires configuring an email domain first.
 
-4. Match existing app conventions
-- Reuse existing UI components from `src/components/ui/dialog.tsx`, `button.tsx`, and table styling already used in `BatchDetail.tsx`.
-- Keep the change localized to Batch Detail so it does not affect approval, refund, or timeline logic.
+### Implementation steps
 
-5. Optional consistency pass
-- Apply the same full-message treatment to other truncated error surfaces found during review:
-  - `src/components/TransactionTimeline.tsx`
-  - `src/pages/Settings.tsx` health check error text
-- This is optional but recommended so users get consistent error visibility across the app.
+**Step 1 -- Update Login.tsx: Forgot Password Dialog**
+- Add a `forgotOpen` state and `resetEmail` state
+- Replace the inline button+logic with a Dialog containing:
+  - Email input with Mail icon
+  - "Send Reset Link" button with loading state
+  - Calls `supabase.auth.resetPasswordForEmail` on submit
+- Import Dialog components from `@/components/ui/dialog`
 
-Technical details
-- Current truncation point:
-  - `src/pages/BatchDetail.tsx:362`
-  - current class: `text-xs text-destructive max-w-[200px] truncate`
-- Recommended implementation:
-  - add component state like `selectedError: string | null`
-  - render compact preview with line clamp or truncated single line
-  - add a small button/link such as “View”
-  - show full error inside `<Dialog>` with responsive max width and scroll area
-- Benefit:
-  - users can inspect full MTN/API failure details like `Transfer failed: 403 { ... }`
-  - table remains readable on smaller screens
+**Step 2 -- Set up email domain**
+No email domain is configured yet. We need to set one up before we can create branded templates. You will be prompted to configure your sender domain (e.g., `notify@yourdomain.com`).
 
-What I will change once you approve
-- Edit `src/pages/BatchDetail.tsx`
-- Possibly make the same visibility improvement in `src/components/TransactionTimeline.tsx` and `src/pages/Settings.tsx` for consistency
+**Step 3 -- Scaffold and brand auth email templates**
+Once the domain is set:
+- Scaffold all 6 auth email templates (signup, recovery, magic-link, invite, email-change, reauthentication)
+- Apply ExpoPay branding: green primary (`hsl(152, 100%, 30%)`), gold accent (`hsl(45, 100%, 50%)`), dark secondary (`hsl(200, 60%, 22%)`), Space Grotesk headings, Inter body text, `0.625rem` border radius
+- Deploy the auth-email-hook edge function
+
+### Technical details
+- Files changed: `src/pages/Login.tsx`
+- Files created: auth email templates under `supabase/functions/_shared/email-templates/`
+- Edge function deployed: `auth-email-hook`
+- The Forgot Password dialog uses the existing `Dialog` component from the UI library
+
