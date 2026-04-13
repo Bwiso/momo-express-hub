@@ -30,14 +30,14 @@ const StatCard = ({ title, value, subtitle, icon: Icon, trend, variant = "defaul
     initial={{ opacity: 0, y: 12 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.35 }}
-    className={cn("rounded-xl p-5", variantStyles[variant])}
+    className={cn("rounded-xl p-3 sm:p-5", variantStyles[variant])}
   >
     <div className="flex items-start justify-between">
       <div className="space-y-1">
         <p className={cn("text-sm font-medium", variant === "default" ? "text-muted-foreground" : "opacity-80")}>
           {title}
         </p>
-        <p className="font-display text-2xl font-bold tracking-tight">{value}</p>
+        <p className="font-display text-lg sm:text-2xl font-bold tracking-tight">{value}</p>
         {subtitle && (
           <p className={cn("text-xs", variant === "default" ? "text-muted-foreground" : "opacity-60")}>{subtitle}</p>
         )}
@@ -47,8 +47,8 @@ const StatCard = ({ title, value, subtitle, icon: Icon, trend, variant = "defaul
           </p>
         )}
       </div>
-      <div className={cn("flex h-10 w-10 items-center justify-center rounded-lg", iconVariantStyles[variant])}>
-        <Icon size={20} />
+      <div className={cn("flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg", iconVariantStyles[variant])}>
+        <Icon size={16} className="sm:w-5 sm:h-5" />
       </div>
     </div>
   </motion.div>
