@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Zap, Eye, EyeOff, Lock, Mail, User } from "lucide-react";
+import { Zap, Eye, EyeOff, Lock, Mail, User, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +16,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [lockout, setLockout] = useState<{ locked: boolean; lockedUntil?: string; attempts: number }>({ locked: false, attempts: 0 });
 
   // Handle email confirmation redirect — sign out the auto-session and prompt manual login
   useEffect(() => {
