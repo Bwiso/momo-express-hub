@@ -158,7 +158,7 @@ const Dashboard = () => {
         <p className="text-xs sm:text-sm text-muted-foreground mt-1">Overview of your payment operations</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-5 sm:gap-4">
         <StatCard
           title="Total Disbursed"
           value={stats ? formatAmount(stats.totalDisbursed) : "—"}
