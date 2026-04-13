@@ -295,7 +295,26 @@ const Reports = () => {
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end">
               <div className="p-3 space-y-3">
-                <div>
+                {/* Quick presets */}
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { label: "Today", from: new Date(), to: new Date() },
+                    { label: "Last 7 days", from: subDays(new Date(), 6), to: new Date() },
+                    { label: "Last 30 days", from: subDays(new Date(), 29), to: new Date() },
+                    { label: "This month", from: startOfMonth(new Date()), to: new Date() },
+                  ].map(preset => (
+                    <Button
+                      key={preset.label}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs h-7"
+                      onClick={() => { setDateFrom(preset.from); setDateTo(preset.to); }}
+                    >
+                      {preset.label}
+                    </Button>
+                  ))}
+                </div>
+                <div className="border-t border-border pt-3">
                   <p className="text-xs font-medium text-muted-foreground mb-1.5">From</p>
                   <Calendar
                     mode="single"
