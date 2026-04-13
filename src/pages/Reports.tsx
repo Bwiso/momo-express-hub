@@ -364,7 +364,7 @@ const Reports = () => {
               <h3 className="font-display text-sm font-semibold mb-1">{report.name}</h3>
               <p className="text-xs text-muted-foreground">{report.description}</p>
             </div>
-            <div className="flex gap-2 mt-4">
+            <div className="flex flex-wrap gap-2 mt-4">
               <Button
                 variant="ghost"
                 size="sm"
@@ -382,7 +382,7 @@ const Reports = () => {
                     key={fmt}
                     variant="outline"
                     size="sm"
-                    className="flex-1 gap-1.5 text-xs"
+                    className="flex-1 min-w-[60px] gap-1.5 text-xs"
                     disabled={!!loading || !!previewLoading}
                     onClick={() => handleDownload(report, fmt)}
                   >
