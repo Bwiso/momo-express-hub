@@ -175,6 +175,25 @@ const Login = () => {
             </p>
           </div>
 
+          {lockout.locked && (
+            <div className="mb-4 flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              <ShieldAlert size={18} className="shrink-0" />
+              <span>
+                Account locked due to too many failed attempts. Try again in{" "}
+                {lockout.lockedUntil
+                  ? `${Math.max(1, Math.ceil((new Date(lockout.lockedUntil).getTime() - Date.now()) / 60000))} minutes`
+                  : "15 minutes"}.
+              </span>
+            </div>
+          )}
+
+          {!lockout.locked && lockout.attempts > 0 && !isSignUp && (
+            <div className="mb-4 flex items-center gap-2 rounded-lg border border-orange-300 bg-orange-50 p-3 text-sm text-orange-700 dark:border-orange-700 dark:bg-orange-950/30 dark:text-orange-400">
+              <ShieldAlert size={18} className="shrink-0" />
+              <span>{5 - lockout.attempts} login attempt{5 - lockout.attempts !== 1 ? "s" : ""} remaining before lockout.</span>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {isSignUp && (
               <div className="space-y-2">
@@ -234,8 +253,8 @@ const Login = () => {
               </div>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Please wait..." : isSignUp ? "Create Account" : "Sign In"}
+            <Button type="submit" className="w-full" disabled={loading || lockout.locked}>
+              {loading ? "Please wait..." : lockout.locked ? "Account Locked" : isSignUp ? "Create Account" : "Sign In"}
             </Button>
           </form>
 
