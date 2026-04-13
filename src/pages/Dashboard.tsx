@@ -152,13 +152,13 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <div>
-        <h1 className="font-display text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">Overview of your payment operations</p>
+        <h1 className="font-display text-xl sm:text-2xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground mt-1">Overview of your payment operations</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-5 sm:gap-4">
         <StatCard
           title="Total Disbursed"
           value={stats ? formatAmount(stats.totalDisbursed) : "—"}
@@ -204,7 +204,7 @@ const Dashboard = () => {
             <Activity size={14} className="text-success animate-pulse-slow" />
             <h3 className="font-display text-base font-semibold">Active Batches</h3>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {activeBatches.slice(0, 3).map((batch) => (
               <BatchProgressCard
                 key={batch.id}
@@ -236,27 +236,27 @@ const Dashboard = () => {
             No transactions yet. Upload a CSV to get started.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto -mx-1">
+            <table className="w-full text-sm min-w-[500px]">
               <thead>
                 <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
-                  <th className="px-5 py-3">Recipient</th>
-                  <th className="px-5 py-3">Phone</th>
-                  <th className="px-5 py-3">Amount</th>
-                  <th className="px-5 py-3">Status</th>
-                  <th className="px-5 py-3">Time</th>
+                  <th className="px-3 sm:px-5 py-3">Recipient</th>
+                  <th className="px-3 sm:px-5 py-3 hidden sm:table-cell">Phone</th>
+                  <th className="px-3 sm:px-5 py-3">Amount</th>
+                  <th className="px-3 sm:px-5 py-3">Status</th>
+                  <th className="px-3 sm:px-5 py-3 hidden sm:table-cell">Time</th>
                 </tr>
               </thead>
               <tbody>
                 {recentTx.map((tx) => (
                   <tr key={tx.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
-                    <td className="px-5 py-3 font-medium">{tx.recipient_name}</td>
-                    <td className="px-5 py-3 text-muted-foreground">{tx.mobile_number}</td>
-                    <td className="px-5 py-3 font-semibold">{currency} {tx.amount.toLocaleString()}</td>
-                    <td className={`px-5 py-3 font-medium ${statusColor[tx.status] || ""}`}>
+                    <td className="px-3 sm:px-5 py-3 font-medium truncate max-w-[120px] sm:max-w-none">{tx.recipient_name}</td>
+                    <td className="px-3 sm:px-5 py-3 text-muted-foreground hidden sm:table-cell">{tx.mobile_number}</td>
+                    <td className="px-3 sm:px-5 py-3 font-semibold whitespace-nowrap">{currency} {tx.amount.toLocaleString()}</td>
+                    <td className={`px-3 sm:px-5 py-3 font-medium ${statusColor[tx.status] || ""}`}>
                       {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
                     </td>
-                    <td className="px-5 py-3 text-muted-foreground">
+                    <td className="px-3 sm:px-5 py-3 text-muted-foreground hidden sm:table-cell">
                       {new Date(tx.created_at).toLocaleString()}
                     </td>
                   </tr>
