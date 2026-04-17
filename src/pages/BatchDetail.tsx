@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ArrowLeft, Loader2, CheckCircle, XCircle, Clock, RefreshCw, Undo2, History, ChevronDown, FileText, FlaskConical } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle, XCircle, Clock, RefreshCw, Undo2, History, ChevronDown, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,8 +9,6 @@ import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useState } from "react";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import TransactionTimeline from "@/components/TransactionTimeline";
 import { useMtnEnvironment } from "@/hooks/useMtnEnvironment";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -64,7 +62,6 @@ const BatchDetail = () => {
   const [timelineTxId, setTimelineTxId] = useState<string | null>(null);
   const [csvOpen, setCsvOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"approved" | "cancelled" | null>(null);
-  const [testMode, setTestMode] = useState(false);
   const [selectedError, setSelectedError] = useState<string | null>(null);
 
   const { data: batch, isLoading: batchLoading } = useQuery({
@@ -147,7 +144,7 @@ const BatchDetail = () => {
 
       if (status === "approved") {
         const { error: fnError } = await supabase.functions.invoke("process-disbursements", {
-          body: { batchId: batch.id, testMode },
+          body: { batchId: batch.id },
         });
         if (fnError) {
           throw new Error("Batch approved but disbursement processing failed to start.");
@@ -159,7 +156,7 @@ const BatchDetail = () => {
       queryClient.invalidateQueries({ queryKey: ["transactions", batchId] });
       queryClient.invalidateQueries({ queryKey: ["batches"] });
       queryClient.invalidateQueries({ queryKey: ["wallet-balance"] });
-      toast.success(status === "approved" ? (testMode ? "Batch approved — TEST MODE disbursements processing" : "Batch approved — disbursements are now processing") : "Batch rejected successfully");
+      toast.success(status === "approved" ? "Batch approved — disbursements are now processing" : "Batch rejected successfully");
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -243,26 +240,14 @@ const BatchDetail = () => {
           </Badge>
           {isPending && canApprove && (
             <>
-              <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-1.5">
-                <FlaskConical size={14} className={testMode ? "text-warning" : "text-muted-foreground"} />
-                <Label htmlFor="test-mode" className="text-xs font-medium cursor-pointer">
-                  Test Mode
-                </Label>
-                <Switch
-                  id="test-mode"
-                  checked={testMode}
-                  onCheckedChange={setTestMode}
-                  className="scale-75"
-                />
-              </div>
               <Button
                 size="sm"
-                className={testMode ? "bg-warning text-warning-foreground hover:bg-warning/90" : "bg-success text-success-foreground hover:bg-success/90"}
-                disabled={approveMutation.isPending || (!testMode && (insufficientBalance || !!isBalanceUnavailable))}
+                className="bg-success text-success-foreground hover:bg-success/90"
+                disabled={approveMutation.isPending || insufficientBalance || !!isBalanceUnavailable}
                 onClick={() => setConfirmAction("approved")}
               >
                 {approveMutation.isPending && confirmAction === "approved" ? <Loader2 size={14} className="animate-spin mr-1" /> : <CheckCircle size={14} className="mr-1" />}
-                {testMode ? "Test Approve" : "Approve"}
+                Approve
               </Button>
               <Button
                 size="sm"
@@ -429,16 +414,14 @@ const BatchDetail = () => {
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmAction === "approved"
-                ? testMode
-                  ? `This will run batch ${batch?.batch_number} in TEST MODE — no real money will be sent. Transactions will be simulated with ~80% success rate for QA purposes.`
-                  : `This will approve batch ${batch?.batch_number} and trigger disbursements of ${currency} ${Number(batch?.total_amount).toLocaleString()} to ${batch?.total_records} recipients. This action cannot be undone.`
+                ? `This will approve batch ${batch?.batch_number} and trigger disbursements of ${currency} ${Number(batch?.total_amount).toLocaleString()} to ${batch?.total_records} recipients. This action cannot be undone.`
                 : `This will reject batch ${batch?.batch_number}. The batch will be cancelled and no payments will be processed.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className={confirmAction === "approved" ? (testMode ? "bg-warning text-warning-foreground hover:bg-warning/90" : "bg-success text-success-foreground hover:bg-success/90") : "bg-destructive text-destructive-foreground hover:bg-destructive/90"}
+              className={confirmAction === "approved" ? "bg-success text-success-foreground hover:bg-success/90" : "bg-destructive text-destructive-foreground hover:bg-destructive/90"}
               onClick={() => {
                 if (confirmAction) {
                   approveMutation.mutate({ status: confirmAction });
