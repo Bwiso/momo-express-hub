@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
         const tokenData = JSON.parse(tokenText);
         const accessToken = tokenData.access_token;
         const candidates = Array.from(
-          new Set([targetEnv, "mtnzambia", "mtnzm", "zambia", "production"].filter(Boolean))
+          new Set([targetEnv, "mtnzambia"].filter(Boolean))
         );
 
         const balanceResults: Record<string, unknown>[] = [];
@@ -143,39 +143,6 @@ Deno.serve(async (req) => {
     } catch (e) {
       (diagnostics.step2_tokenPrimary as Record<string, unknown>).fetchError =
         e instanceof Error ? e.message : String(e);
-    }
-
-    // Step 4: Token request — secondary key (if different)
-    if (secondaryKey && secondaryKey !== primaryKey) {
-      diagnostics.step4_tokenSecondary = {
-        method: "POST",
-        url: tokenUrl,
-        headers: {
-          Authorization: `Basic ${apiUser.slice(0, 4)}…:${"*".repeat(8)}`,
-          "Ocp-Apim-Subscription-Key": mask(secondaryKey),
-        },
-      };
-      try {
-        const t0 = Date.now();
-        const tokenRes2 = await fetch(tokenUrl, {
-          method: "POST",
-          headers: {
-            Authorization: `Basic ${credentials}`,
-            "Ocp-Apim-Subscription-Key": secondaryKey,
-          },
-        });
-        const tokenText2 = await tokenRes2.text();
-        (diagnostics.step4_tokenSecondary as Record<string, unknown>).response = {
-          status: tokenRes2.status,
-          statusText: tokenRes2.statusText,
-          latencyMs: Date.now() - t0,
-          headers: Object.fromEntries(tokenRes2.headers.entries()),
-          body: tokenText2,
-        };
-      } catch (e) {
-        (diagnostics.step4_tokenSecondary as Record<string, unknown>).fetchError =
-          e instanceof Error ? e.message : String(e);
-      }
     }
 
     return new Response(JSON.stringify(diagnostics, null, 2), {
