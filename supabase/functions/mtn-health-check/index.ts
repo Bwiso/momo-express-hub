@@ -62,6 +62,9 @@ Deno.serve(async (req) => {
 
     const tokenData = await tokenRes.json();
     const accessToken = tokenData.access_token;
+    results.accessToken = accessToken;
+    results.tokenType = tokenData.token_type;
+    results.tokenExpiresIn = tokenData.expires_in;
 
     // Test 2: Balance API
     const balanceStart = Date.now();

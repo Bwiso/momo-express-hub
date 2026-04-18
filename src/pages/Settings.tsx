@@ -16,6 +16,9 @@ interface HealthCheckResult {
   tokenLatency?: number;
   balanceLatency?: number;
   balance?: { availableBalance: string; currency: string };
+  accessToken?: string;
+  tokenType?: string;
+  tokenExpiresIn?: number;
   tokenError?: string;
   balanceError?: string;
   error?: string;
@@ -161,6 +164,21 @@ const Settings = () => {
                       <span className="font-semibold">
                         {healthResult.balance.currency} {Number(healthResult.balance.availableBalance).toLocaleString()}
                       </span>
+                    </div>
+                  )}
+                  {healthResult.accessToken && (
+                    <div className="pt-2 border-t border-border space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Generated Token</span>
+                        {healthResult.tokenExpiresIn && (
+                          <span className="text-xs text-muted-foreground">
+                            {healthResult.tokenType} · expires in {healthResult.tokenExpiresIn}s
+                          </span>
+                        )}
+                      </div>
+                      <div className="rounded-md bg-background border border-border p-2 font-mono text-xs break-all select-all">
+                        {healthResult.accessToken}
+                      </div>
                     </div>
                   )}
                   {healthResult.error && (
