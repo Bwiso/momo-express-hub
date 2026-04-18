@@ -23,7 +23,7 @@ function getMtnConfig(): MtnConfig {
   return {
     baseUrl,
     disbursementUrl: `${baseUrl}/disbursement`,
-    targetEnvironment: Deno.env.get("MTN_TARGET_ENVIRONMENT") || "zambia",
+    targetEnvironment: Deno.env.get("MTN_TARGET_ENVIRONMENT") || "mtnzambia",
     currency: "ZMW",
     primaryKey,
   };
