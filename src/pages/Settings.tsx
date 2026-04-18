@@ -186,8 +186,18 @@ const Settings = () => {
                           </span>
                         )}
                       </div>
-                      <div className="rounded-md bg-background border border-border p-2 font-mono text-xs break-all select-all">
+                      <div className="relative rounded-md bg-background border border-border p-2 pr-10 font-mono text-xs break-all select-all">
                         {healthResult.accessToken}
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          onClick={handleCopyToken}
+                          className="absolute top-1 right-1 h-7 w-7"
+                          aria-label="Copy token"
+                        >
+                          {copied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
+                        </Button>
                       </div>
                     </div>
                   )}
