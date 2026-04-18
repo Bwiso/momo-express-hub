@@ -169,7 +169,7 @@ const DiagnoseMtn = () => {
               </Card>
             )}
 
-            {renderStep("step4_tokenSecondary", "Step 4 — OAuth Token (Secondary Key)")}
+            
 
             {(result.error || result.fatalError) && (
               <Card className="border-destructive/40">
