@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
-import { Shield, UserCog, Loader2, Info, History, ArrowRight } from "lucide-react";
+import { Shield, UserCog, Loader2, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -140,18 +140,6 @@ const UserManagement = () => {
     },
   });
 
-  const restoreBwiso = () => {
-    const target = users?.find((u) => u.email === "bwiso.daka@gmail.com");
-    if (!target) {
-      toast({
-        title: "User not found",
-        description: "bwiso.daka@gmail.com is not in the user list.",
-        variant: "destructive",
-      });
-      return;
-    }
-    setPending({ user: target, newRole: "super_admin" });
-  };
 
   if (currentUserRole !== "super_admin") {
     return (
@@ -171,49 +159,6 @@ const UserManagement = () => {
           Assign and manage roles for all users
         </p>
       </div>
-
-      {/* Help banner */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-xl border border-info/20 bg-info/5 p-4 flex gap-3"
-      >
-        <Info size={18} className="text-info shrink-0 mt-0.5" />
-        <div className="space-y-1 text-sm">
-          <p className="font-medium text-foreground">
-            Roles live in the database, not in the app code
-          </p>
-          <p className="text-muted-foreground">
-            User roles are stored in our managed backend (Lovable Cloud). Editing
-            files on your Linode server, redeploying the app, or restoring code
-            versions will <span className="font-medium text-foreground">not</span> change
-            anyone's role. The Linode server is only a network proxy for MTN MoMo API
-            calls. Use this page (or the guided action below) to change roles safely.
-          </p>
-        </div>
-      </motion.div>
-
-      {/* Guided restore action */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-xl border border-border bg-card p-5 flex flex-col sm:flex-row sm:items-center gap-4 justify-between"
-      >
-        <div className="flex gap-3">
-          <History size={18} className="text-primary shrink-0 mt-0.5" />
-          <div className="space-y-1 text-sm">
-            <p className="font-medium text-foreground">Guided restore</p>
-            <p className="text-muted-foreground">
-              Quickly restore <span className="font-mono">bwiso.daka@gmail.com</span> to{" "}
-              <span className="font-medium text-foreground">Super Admin</span>. You'll
-              see the before/after values and confirm before the change is saved.
-            </p>
-          </div>
-        </div>
-        <Button onClick={restoreBwiso} className="shrink-0">
-          Restore bwiso.daka to Super Admin
-        </Button>
-      </motion.div>
 
       <motion.div
         initial={{ opacity: 0, y: 12 }}
