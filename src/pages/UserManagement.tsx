@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
-import { Shield, UserCog, Loader2, Info, History, ArrowRight } from "lucide-react";
+import { Shield, UserCog, Loader2, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -140,18 +140,6 @@ const UserManagement = () => {
     },
   });
 
-  const restoreBwiso = () => {
-    const target = users?.find((u) => u.email === "bwiso.daka@gmail.com");
-    if (!target) {
-      toast({
-        title: "User not found",
-        description: "bwiso.daka@gmail.com is not in the user list.",
-        variant: "destructive",
-      });
-      return;
-    }
-    setPending({ user: target, newRole: "super_admin" });
-  };
 
   if (currentUserRole !== "super_admin") {
     return (
