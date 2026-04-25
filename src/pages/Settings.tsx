@@ -281,30 +281,114 @@ interface CredentialRowProps {
 }
 
 const CredentialRow = ({ label, description, secretName }: CredentialRowProps) => {
-  const handleUpdate = () => {
-    toast.info(
-      `To update ${label}, ask the assistant: "Update the ${secretName} secret"`,
-      { duration: 6000 }
-    );
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState("");
+  const [show, setShow] = useState(false);
+
+  const saveMutation = useMutation({
+    mutationFn: async (newValue: string) => {
+      const { data, error } = await supabase.functions.invoke("update-mtn-credential", {
+        body: { key: secretName, value: newValue },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      toast.success(`${label} updated successfully`);
+      setOpen(false);
+      setValue("");
+      setShow(false);
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to update: ${err.message}`);
+    },
+  });
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!value.trim()) {
+      toast.error("Please enter a value");
+      return;
+    }
+    saveMutation.mutate(value);
   };
 
   return (
-    <div className="flex items-start justify-between gap-4 rounded-lg border border-border bg-muted/30 p-4">
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-sm">{label}</span>
-          <Badge variant="outline" className="bg-success/10 text-success border-success/20 text-[10px]">
-            <CheckCircle size={10} className="mr-1" />
-            Configured
-          </Badge>
+    <>
+      <div className="flex items-start justify-between gap-4 rounded-lg border border-border bg-muted/30 p-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-sm">{label}</span>
+            <Badge variant="outline" className="bg-success/10 text-success border-success/20 text-[10px]">
+              <CheckCircle size={10} className="mr-1" />
+              Configured
+            </Badge>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">{description}</p>
+          <code className="text-[10px] text-muted-foreground font-mono mt-1 block">{secretName}</code>
         </div>
-        <p className="text-xs text-muted-foreground mt-1">{description}</p>
-        <code className="text-[10px] text-muted-foreground font-mono mt-1 block">{secretName}</code>
+        <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
+          Update
+        </Button>
       </div>
-      <Button size="sm" variant="outline" onClick={handleUpdate}>
-        Update
-      </Button>
-    </div>
+
+      <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setValue(""); setShow(false); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Update {label}</DialogTitle>
+            <DialogDescription>
+              Enter the new value from the MTN MoMo Developer Portal. The value will be encrypted and saved to the backend.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSave} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor={`cred-${secretName}`}>{label}</Label>
+              <div className="relative">
+                <Input
+                  id={`cred-${secretName}`}
+                  type={show ? "text" : "password"}
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                  placeholder={`Paste ${label.toLowerCase()} here`}
+                  autoComplete="off"
+                  className="pr-10 font-mono text-xs"
+                  disabled={saveMutation.isPending}
+                />
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => setShow((s) => !s)}
+                  className="absolute top-1 right-1 h-7 w-7"
+                  aria-label={show ? "Hide value" : "Show value"}
+                >
+                  {show ? <EyeOff size={14} /> : <Eye size={14} />}
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Stored as: <code className="font-mono">{secretName}</code>
+              </p>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={saveMutation.isPending}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={saveMutation.isPending || !value.trim()}>
+                {saveMutation.isPending ? (
+                  <>
+                    <Loader2 size={14} className="mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
