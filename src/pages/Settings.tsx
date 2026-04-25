@@ -52,6 +52,42 @@ const Settings = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const exportHealthResult = (format: "json" | "csv") => {
+    if (!credHealthResult) return;
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    if (format === "json") {
+      const blob = new Blob([JSON.stringify(credHealthResult, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `mtn-health-check-${timestamp}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Health check JSON exported");
+    } else {
+      const rows = [
+        ["Metric", "Value"],
+        ["Success", credHealthResult.success ? "Yes" : "No"],
+        ["Environment", credHealthResult.environment],
+        ["Token Latency (ms)", credHealthResult.tokenLatency?.toString() ?? ""],
+        ["Balance Latency (ms)", credHealthResult.balanceLatency?.toString() ?? ""],
+        ["Available Balance", credHealthResult.balance ? `${credHealthResult.balance.currency} ${credHealthResult.balance.availableBalance}` : ""],
+        ["Token Error", credHealthResult.tokenError ?? ""],
+        ["Balance Error", credHealthResult.balanceError ?? ""],
+        ["General Error", credHealthResult.error ?? ""],
+      ];
+      const csv = rows.map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `mtn-health-check-${timestamp}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Health check CSV exported");
+    }
+  };
+
   const healthCheckMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("mtn-health-check", {
