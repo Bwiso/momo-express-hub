@@ -352,39 +352,40 @@ const Settings = () => {
                   animate={{ opacity: 1, height: "auto" }}
                   className="rounded-lg border border-border bg-muted/50 p-4 space-y-3"
                 >
-                  <div className="flex items-center gap-2">
-                    {credHealthResult.success ? (
-                      <CheckCircle className="text-success" size={20} />
-                    ) : (
-                      <XCircle className="text-destructive" size={20} />
-                    )}
-                    <span className="font-medium text-sm">
-                      {credHealthResult.success
-                        ? "Credentials are working"
-                        : "Credential check failed"}
-                    </span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {credHealthResult.success ? (
+                        <CheckCircle className="text-success" size={20} />
+                      ) : (
+                        <XCircle className="text-destructive" size={20} />
+                      )}
+                      <span className="font-medium text-sm">
+                        {credHealthResult.success
+                          ? "Credentials are working"
+                          : "Credential check failed"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => exportHealthResult("json")}
+                      >
+                        <FileJson size={14} className="mr-1" />
+                        JSON
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => exportHealthResult("csv")}
+                      >
+                        <FileSpreadsheet size={14} className="mr-1" />
+                        CSV
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 px-2 text-xs"
-                      onClick={() => exportHealthResult("json")}
-                    >
-                      <FileJson size={14} className="mr-1" />
-                      JSON
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 px-2 text-xs"
-                      onClick={() => exportHealthResult("csv")}
-                    >
-                      <FileSpreadsheet size={14} className="mr-1" />
-                      CSV
-                    </Button>
-                  </div>
-                </div>
                   <div className="grid gap-2 text-xs">
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">Token Generation</span>
