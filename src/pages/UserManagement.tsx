@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
-import { Shield, UserCog, Loader2, ArrowRight } from "lucide-react";
+import { Shield, UserCog, Loader2, ArrowRight, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -57,10 +57,11 @@ interface PendingChange {
 }
 
 const UserManagement = () => {
-  const { role: currentUserRole } = useAuth();
+  const { role: currentUserRole, user: currentUser } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [pending, setPending] = useState<PendingChange | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<UserWithRole | null>(null);
 
   const { data: users, isLoading } = useQuery({
     queryKey: ["admin-users"],
@@ -140,6 +141,39 @@ const UserManagement = () => {
     },
   });
 
+  const deleteUser = useMutation({
+    mutationFn: async (user: UserWithRole) => {
+      const { data, error } = await supabase.rpc("delete_user_cascade" as never, {
+        _target_user_id: user.user_id,
+      } as never);
+      if (error) throw error;
+
+      await supabase.from("audit_logs").insert({
+        action: `User deleted: ${user.email || user.full_name}`,
+        action_type: "config",
+        user_name: "Super Admin",
+        user_role: "super_admin",
+        details: {
+          target_user_id: user.user_id,
+          target_email: user.email,
+          previous_role: user.role,
+        },
+      });
+
+      return data;
+    },
+    onSuccess: (_data, user) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast({
+        title: "User deleted",
+        description: `${user.email || user.full_name} has been removed.`,
+      });
+      setPendingDelete(null);
+    },
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
 
   if (currentUserRole !== "super_admin") {
     return (
@@ -191,6 +225,7 @@ const UserManagement = () => {
                   <th className="px-5 py-3">User</th>
                   <th className="px-5 py-3">Current Role</th>
                   <th className="px-5 py-3">Change Role</th>
+                  <th className="px-5 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -246,6 +281,22 @@ const UserManagement = () => {
                           ))}
                         </SelectContent>
                       </Select>
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        disabled={u.user_id === currentUser?.id}
+                        onClick={() => setPendingDelete(u)}
+                        title={
+                          u.user_id === currentUser?.id
+                            ? "You cannot delete your own account"
+                            : "Delete user"
+                        }
+                      >
+                        <Trash2 size={16} />
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -333,6 +384,70 @@ const UserManagement = () => {
                 </>
               ) : (
                 "Confirm change"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <Dialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trash2 size={18} className="text-destructive" />
+              Delete user
+            </DialogTitle>
+            <DialogDescription>
+              This permanently removes the user, their role, and their profile.
+              This action cannot be undone and will be recorded in the audit log.
+            </DialogDescription>
+          </DialogHeader>
+
+          {pendingDelete && (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">
+              <div className="font-medium">{pendingDelete.full_name}</div>
+              {pendingDelete.email && (
+                <div className="text-xs text-muted-foreground">
+                  {pendingDelete.email}
+                </div>
+              )}
+              {pendingDelete.role && (
+                <div className="mt-2">
+                  <Badge
+                    variant="outline"
+                    className={roleBadgeClass[pendingDelete.role]}
+                  >
+                    {roleLabel(pendingDelete.role)}
+                  </Badge>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setPendingDelete(null)}
+              disabled={deleteUser.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => pendingDelete && deleteUser.mutate(pendingDelete)}
+              disabled={!pendingDelete || deleteUser.isPending}
+            >
+              {deleteUser.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete user"
               )}
             </Button>
           </DialogFooter>
