@@ -237,7 +237,7 @@ const Settings = () => {
               <AlertTitle>Production credentials</AlertTitle>
               <AlertDescription className="space-y-2">
                 <p>
-                  These power live ZMW disbursements. Updating a value redeploys the edge functions automatically. Run a Health Check above after saving to confirm the new credentials work.
+                  These power live ZMW disbursements. Saved values are stored encrypted at rest and used by the disbursement engine on the next call. Run a Health Check above after saving to confirm the new credentials work.
                 </p>
                 <a
                   href="https://momodeveloper.mtn.com/"
