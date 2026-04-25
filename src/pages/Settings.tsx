@@ -39,6 +39,7 @@ interface HealthCheckResult {
 const Settings = () => {
   const { role } = useAuth();
   const [healthResult, setHealthResult] = useState<HealthCheckResult | null>(null);
+  const [credHealthResult, setCredHealthResult] = useState<HealthCheckResult | null>(null);
   const [copied, setCopied] = useState(false);
 
   const handleCopyToken = async () => {
