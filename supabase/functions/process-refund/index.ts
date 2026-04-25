@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { getMtnCredentials } from "../_shared/mtn-credentials.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,8 +7,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-function getMtnConfig() {
-  const primaryKey = Deno.env.get("MTN_MOMO_PRIMARY_KEY");
+async function getMtnConfig() {
+  const creds = await getMtnCredentials();
+  const primaryKey = creds.MTN_MOMO_PRIMARY_KEY;
   if (!primaryKey) throw new Error("MTN_MOMO_PRIMARY_KEY not configured");
 
   const baseUrl = "https://proxy.momoapi.mtn.com";
@@ -20,16 +22,17 @@ function getMtnConfig() {
   };
 }
 
-function getCredentials(): { apiUser: string; apiKey: string } {
-  const apiUser = Deno.env.get("MTN_API_USER");
-  const apiKey = Deno.env.get("MTN_API_KEY");
+async function getCredentials(): Promise<{ apiUser: string; apiKey: string }> {
+  const creds = await getMtnCredentials();
+  const apiUser = creds.MTN_API_USER;
+  const apiKey = creds.MTN_API_KEY;
   if (!apiUser || !apiKey) {
     throw new Error("MTN_API_USER and MTN_API_KEY secrets are required");
   }
   return { apiUser, apiKey };
 }
 
-async function getOAuthToken(config: ReturnType<typeof getMtnConfig>, apiUser: string, apiKey: string): Promise<string> {
+async function getOAuthToken(config: Awaited<ReturnType<typeof getMtnConfig>>, apiUser: string, apiKey: string): Promise<string> {
   const credentials = btoa(`${apiUser}:${apiKey}`);
   const res = await fetch(`${config.disbursementUrl}/token/`, {
     method: "POST",
@@ -45,7 +48,7 @@ async function getOAuthToken(config: ReturnType<typeof getMtnConfig>, apiUser: s
 
 async function requestRefund(
   token: string,
-  config: ReturnType<typeof getMtnConfig>,
+  config: Awaited<ReturnType<typeof getMtnConfig>>,
   transaction: { id: string; amount: number; mtn_transaction_id: string; recipient_name: string },
 ): Promise<string> {
   const refundReferenceId = crypto.randomUUID();
@@ -78,7 +81,7 @@ async function requestRefund(
 
 async function checkRefundStatus(
   token: string,
-  config: ReturnType<typeof getMtnConfig>,
+  config: Awaited<ReturnType<typeof getMtnConfig>>,
   refundReferenceId: string,
 ): Promise<{ status: string; reason?: string }> {
   const res = await fetch(`${config.disbursementUrl}/v1_0/refund/${refundReferenceId}`, {
@@ -135,8 +138,8 @@ Deno.serve(async (req) => {
       .update({ status: "refund_processing", error_message: null })
       .eq("id", transaction.id);
 
-    const config = getMtnConfig();
-    const { apiUser, apiKey } = getCredentials();
+    const config = await getMtnConfig();
+    const { apiUser, apiKey } = await getCredentials();
     const token = await getOAuthToken(config, apiUser, apiKey);
 
     const refundReferenceId = await requestRefund(token, config, {

@@ -1,3 +1,5 @@
+import { getMtnCredentials } from "../_shared/mtn-credentials.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -19,8 +21,9 @@ interface ValidationResult {
 
 const MAX_VALIDATIONS = 250;
 
-function getMtnConfig() {
-  const primaryKey = Deno.env.get("MTN_MOMO_PRIMARY_KEY");
+async function getMtnConfig() {
+  const creds = await getMtnCredentials();
+  const primaryKey = creds.MTN_MOMO_PRIMARY_KEY;
   if (!primaryKey) throw new Error("MTN_MOMO_PRIMARY_KEY not configured");
 
   const baseUrl = "https://proxy.momoapi.mtn.com";
@@ -32,16 +35,17 @@ function getMtnConfig() {
   };
 }
 
-function getCredentials(): { apiUser: string; apiKey: string } {
-  const apiUser = Deno.env.get("MTN_API_USER");
-  const apiKey = Deno.env.get("MTN_API_KEY");
+async function getCredentials(): Promise<{ apiUser: string; apiKey: string }> {
+  const creds = await getMtnCredentials();
+  const apiUser = creds.MTN_API_USER;
+  const apiKey = creds.MTN_API_KEY;
   if (!apiUser || !apiKey) {
     throw new Error("MTN_API_USER and MTN_API_KEY secrets are required");
   }
   return { apiUser, apiKey };
 }
 
-async function getOAuthToken(config: ReturnType<typeof getMtnConfig>, apiUser: string, apiKey: string): Promise<string> {
+async function getOAuthToken(config: Awaited<ReturnType<typeof getMtnConfig>>, apiUser: string, apiKey: string): Promise<string> {
   const credentials = btoa(`${apiUser}:${apiKey}`);
   const res = await fetch(`${config.disbursementUrl}/token/`, {
     method: "POST",
@@ -61,7 +65,7 @@ function sleep(ms: number) {
 
 async function validatePhone(
   token: string,
-  config: ReturnType<typeof getMtnConfig>,
+  config: Awaited<ReturnType<typeof getMtnConfig>>,
   phone: string,
 ): Promise<{ valid: boolean; reason?: string }> {
   const res = await fetch(
@@ -120,8 +124,8 @@ Deno.serve(async (req) => {
     const phonesToValidate = uniquePhones.slice(0, MAX_VALIDATIONS);
     const truncated = uniquePhones.length > MAX_VALIDATIONS;
 
-    const config = getMtnConfig();
-    const { apiUser, apiKey } = getCredentials();
+    const config = await getMtnConfig();
+    const { apiUser, apiKey } = await getCredentials();
     const token = await getOAuthToken(config, apiUser, apiKey);
 
     const phoneResults = new Map<string, { valid: boolean; reason?: string }>();
