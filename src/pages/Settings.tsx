@@ -39,6 +39,7 @@ interface HealthCheckResult {
 const Settings = () => {
   const { role } = useAuth();
   const [healthResult, setHealthResult] = useState<HealthCheckResult | null>(null);
+  const [credHealthResult, setCredHealthResult] = useState<HealthCheckResult | null>(null);
   const [copied, setCopied] = useState(false);
 
   const handleCopyToken = async () => {
@@ -60,6 +61,25 @@ const Settings = () => {
     onSuccess: (data) => setHealthResult(data),
     onError: (err: Error) => {
       setHealthResult({
+        success: false,
+        environment: "unknown",
+        secretsConfigured: { primaryKey: false, targetEnv: false },
+        error: err.message,
+      });
+    },
+  });
+
+  const credHealthCheckMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("mtn-health-check", {
+        body: { environment: "production" },
+      });
+      if (error) throw error;
+      return data as HealthCheckResult;
+    },
+    onSuccess: (data) => setCredHealthResult(data),
+    onError: (err: Error) => {
+      setCredHealthResult({
         success: false,
         environment: "unknown",
         secretsConfigured: { primaryKey: false, targetEnv: false },
@@ -266,6 +286,90 @@ const Settings = () => {
                 description="The API key returned by MTN when you created the API user."
                 secretName="MTN_API_KEY"
               />
+            </div>
+
+            <div className="pt-2 border-t border-border space-y-3">
+              <Button
+                onClick={() => credHealthCheckMutation.mutate()}
+                disabled={credHealthCheckMutation.isPending}
+                variant="outline"
+                className="w-full"
+              >
+                {credHealthCheckMutation.isPending ? (
+                  <>
+                    <Loader2 size={16} className="mr-2 animate-spin" />
+                    Testing credentials...
+                  </>
+                ) : (
+                  <>
+                    <Activity size={16} className="mr-2" />
+                    Run Health Check
+                  </>
+                )}
+              </Button>
+
+              {credHealthResult && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  className="rounded-lg border border-border bg-muted/50 p-4 space-y-3"
+                >
+                  <div className="flex items-center gap-2">
+                    {credHealthResult.success ? (
+                      <CheckCircle className="text-success" size={20} />
+                    ) : (
+                      <XCircle className="text-destructive" size={20} />
+                    )}
+                    <span className="font-medium text-sm">
+                      {credHealthResult.success
+                        ? "Credentials are working"
+                        : "Credential check failed"}
+                    </span>
+                  </div>
+                  <div className="grid gap-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Token Generation</span>
+                      {credHealthResult.tokenError ? (
+                        <span className="text-destructive max-w-[60%] text-right break-words">
+                          {credHealthResult.tokenError}
+                        </span>
+                      ) : credHealthResult.tokenLatency ? (
+                        <Badge variant="outline" className="bg-success/10 text-success border-success/20">
+                          ✓ {credHealthResult.tokenLatency}ms
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Balance API</span>
+                      {credHealthResult.balanceError ? (
+                        <span className="text-destructive max-w-[60%] text-right break-words" title={credHealthResult.balanceError}>
+                          {credHealthResult.balanceError}
+                        </span>
+                      ) : credHealthResult.balanceLatency ? (
+                        <Badge variant="outline" className="bg-success/10 text-success border-success/20">
+                          ✓ {credHealthResult.balanceLatency}ms
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </div>
+                    {credHealthResult.balance && (
+                      <div className="flex items-center justify-between pt-2 border-t border-border">
+                        <span className="text-muted-foreground">Available Balance</span>
+                        <span className="font-semibold text-foreground">
+                          {credHealthResult.balance.currency}{" "}
+                          {Number(credHealthResult.balance.availableBalance).toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+                    {credHealthResult.error && (
+                      <div className="text-destructive mt-2">Error: {credHealthResult.error}</div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
             </div>
           </CardContent>
         </Card>
