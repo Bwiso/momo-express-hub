@@ -192,9 +192,9 @@ Deno.serve(async (req) => {
     let token: string | null = null;
 
     if (!isTestMode) {
-      config = getMtnConfig();
+      config = await getMtnConfig();
       console.log(`Running in PRODUCTION mode — Target: ${config.targetEnvironment}, Currency: ${config.currency}`);
-      const { apiUser, apiKey } = getCredentials();
+      const { apiUser, apiKey } = await getCredentials();
       token = await getOAuthToken(config, apiUser, apiKey);
       console.log("OAuth token obtained");
     } else {

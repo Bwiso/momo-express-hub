@@ -54,8 +54,8 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("Missing Authorization header");
 
-    const config = getMtnConfig();
-    const { apiUser, apiKey } = getCredentials();
+    const config = await getMtnConfig();
+    const { apiUser, apiKey } = await getCredentials();
     const token = await getOAuthToken(config, apiUser, apiKey);
 
     const res = await fetch(`${config.disbursementUrl}/v1_0/account/balance`, {

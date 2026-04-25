@@ -124,8 +124,8 @@ Deno.serve(async (req) => {
     const phonesToValidate = uniquePhones.slice(0, MAX_VALIDATIONS);
     const truncated = uniquePhones.length > MAX_VALIDATIONS;
 
-    const config = getMtnConfig();
-    const { apiUser, apiKey } = getCredentials();
+    const config = await getMtnConfig();
+    const { apiUser, apiKey } = await getCredentials();
     const token = await getOAuthToken(config, apiUser, apiKey);
 
     const phoneResults = new Map<string, { valid: boolean; reason?: string }>();

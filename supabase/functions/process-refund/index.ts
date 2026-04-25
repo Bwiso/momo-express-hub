@@ -138,8 +138,8 @@ Deno.serve(async (req) => {
       .update({ status: "refund_processing", error_message: null })
       .eq("id", transaction.id);
 
-    const config = getMtnConfig();
-    const { apiUser, apiKey } = getCredentials();
+    const config = await getMtnConfig();
+    const { apiUser, apiKey } = await getCredentials();
     const token = await getOAuthToken(config, apiUser, apiKey);
 
     const refundReferenceId = await requestRefund(token, config, {
