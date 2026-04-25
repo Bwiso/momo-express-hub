@@ -298,6 +298,7 @@ export type Database = {
     Functions: {
       check_login_lockout: { Args: { p_email: string }; Returns: Json }
       clear_failed_logins: { Args: { p_email: string }; Returns: undefined }
+      delete_user_cascade: { Args: { _target_user_id: string }; Returns: Json }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
