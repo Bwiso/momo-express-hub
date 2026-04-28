@@ -43,7 +43,27 @@ const Settings = () => {
   const { role } = useAuth();
   const [healthResult, setHealthResult] = useState<HealthCheckResult | null>(null);
   const [credHealthResult, setCredHealthResult] = useState<HealthCheckResult | null>(null);
+  const [serverBuild, setServerBuild] = useState<BuildInfo | null>(null);
+  const [serverBuildError, setServerBuildError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  const deploymentCheckMutation = useMutation({
+    mutationFn: async () => {
+      setServerBuildError(null);
+      return await fetchServerBuildInfo();
+    },
+    onSuccess: (data) => setServerBuild(data),
+    onError: (err: Error) => {
+      setServerBuild(null);
+      setServerBuildError(err.message);
+    },
+  });
+
+  const buildsMatch =
+    serverBuild &&
+    BUNDLED_BUILD_INFO.commit !== "unknown" &&
+    serverBuild.commit !== "unknown" &&
+    serverBuild.commit === BUNDLED_BUILD_INFO.commit;
 
   const handleCopyToken = async () => {
     if (!healthResult?.accessToken) return;
