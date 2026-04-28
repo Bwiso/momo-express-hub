@@ -424,7 +424,11 @@ const Settings = () => {
           </CardContent>
         </Card>
 
-
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <KeyRound size={20} />
+              MTN MoMo API Credentials
             </CardTitle>
             <CardDescription>
               Update the credentials used by the disbursement engine. Values are stored as encrypted backend secrets and are never displayed in the UI.
