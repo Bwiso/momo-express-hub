@@ -2,8 +2,9 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
-  Settings as SettingsIcon, Activity, CheckCircle, XCircle, Loader2, Shield, Copy, Check, KeyRound, AlertTriangle, ExternalLink, Eye, EyeOff, Download, FileJson, FileSpreadsheet,
+  Settings as SettingsIcon, Activity, CheckCircle, XCircle, Loader2, Shield, Copy, Check, KeyRound, AlertTriangle, ExternalLink, Eye, EyeOff, Download, FileJson, FileSpreadsheet, GitCommit, Server, RefreshCw,
 } from "lucide-react";
+import { BUNDLED_BUILD_INFO, fetchServerBuildInfo, type BuildInfo } from "@/build-info";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,7 +43,27 @@ const Settings = () => {
   const { role } = useAuth();
   const [healthResult, setHealthResult] = useState<HealthCheckResult | null>(null);
   const [credHealthResult, setCredHealthResult] = useState<HealthCheckResult | null>(null);
+  const [serverBuild, setServerBuild] = useState<BuildInfo | null>(null);
+  const [serverBuildError, setServerBuildError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  const deploymentCheckMutation = useMutation({
+    mutationFn: async () => {
+      setServerBuildError(null);
+      return await fetchServerBuildInfo();
+    },
+    onSuccess: (data) => setServerBuild(data),
+    onError: (err: Error) => {
+      setServerBuild(null);
+      setServerBuildError(err.message);
+    },
+  });
+
+  const buildsMatch =
+    serverBuild &&
+    BUNDLED_BUILD_INFO.commit !== "unknown" &&
+    serverBuild.commit !== "unknown" &&
+    serverBuild.commit === BUNDLED_BUILD_INFO.commit;
 
   const handleCopyToken = async () => {
     if (!healthResult?.accessToken) return;
@@ -274,6 +295,130 @@ const Settings = () => {
                     <div className="text-destructive text-xs mt-2">Error: {healthResult.error}</div>
                   )}
                 </div>
+              </motion.div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Server size={20} />
+              Deployment Health Check
+            </CardTitle>
+            <CardDescription>
+              Verify what build is currently running. Compares the bundled build info with the live server's <code className="text-xs">/build-info.json</code>.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3 text-sm">
+              <div className="flex items-center justify-between py-2 border-b border-border">
+                <span className="text-muted-foreground flex items-center gap-2">
+                  <GitCommit size={14} /> Bundled Commit
+                </span>
+                <code className="text-xs font-mono">{BUNDLED_BUILD_INFO.commitShort}</code>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-border">
+                <span className="text-muted-foreground">Bundled Image Tag</span>
+                <Badge variant="outline">{BUNDLED_BUILD_INFO.imageTag}</Badge>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-border">
+                <span className="text-muted-foreground">Bundled Build Time</span>
+                <span className="text-xs">{new Date(BUNDLED_BUILD_INFO.buildTime).toLocaleString()}</span>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-border">
+                <span className="text-muted-foreground">Branch</span>
+                <Badge variant="outline">{BUNDLED_BUILD_INFO.branch}</Badge>
+              </div>
+            </div>
+
+            <Button
+              onClick={() => deploymentCheckMutation.mutate()}
+              disabled={deploymentCheckMutation.isPending}
+              variant="outline"
+              className="w-full"
+            >
+              {deploymentCheckMutation.isPending ? (
+                <>
+                  <Loader2 size={16} className="mr-2 animate-spin" />
+                  Checking deployment...
+                </>
+              ) : (
+                <>
+                  <RefreshCw size={16} className="mr-2" />
+                  Run Deployment Health Check
+                </>
+              )}
+            </Button>
+
+            {serverBuildError && (
+              <Alert variant="destructive">
+                <XCircle className="h-4 w-4" />
+                <AlertTitle>Could not fetch live build info</AlertTitle>
+                <AlertDescription className="text-xs">
+                  {serverBuildError}
+                  <p className="mt-2">
+                    The server may be running an old build that does not yet expose <code>/build-info.json</code>. Re-deploy the latest image to enable this check.
+                  </p>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {serverBuild && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                className="rounded-lg border border-border bg-muted/50 p-4 space-y-3"
+              >
+                <div className="flex items-center gap-2">
+                  {buildsMatch ? (
+                    <CheckCircle className="text-success" size={20} />
+                  ) : (
+                    <AlertTriangle className="text-warning" size={20} />
+                  )}
+                  <span className="font-medium">
+                    {buildsMatch
+                      ? "Live server is running the latest bundled build"
+                      : "Build mismatch — server is serving a different build"}
+                  </span>
+                </div>
+                <div className="grid gap-2 text-sm">
+                  <div className="grid grid-cols-3 gap-2 text-xs font-medium text-muted-foreground border-b border-border pb-1">
+                    <span>Field</span>
+                    <span>Bundled (this tab)</span>
+                    <span>Live Server</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-xs items-center">
+                    <span className="text-muted-foreground">Commit</span>
+                    <code className="font-mono">{BUNDLED_BUILD_INFO.commitShort}</code>
+                    <code className={`font-mono ${buildsMatch ? "text-success" : "text-warning"}`}>
+                      {serverBuild.commitShort}
+                    </code>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-xs items-center">
+                    <span className="text-muted-foreground">Image Tag</span>
+                    <span>{BUNDLED_BUILD_INFO.imageTag}</span>
+                    <span>{serverBuild.imageTag}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-xs items-center">
+                    <span className="text-muted-foreground">Build Time</span>
+                    <span>{new Date(BUNDLED_BUILD_INFO.buildTime).toLocaleString()}</span>
+                    <span>{new Date(serverBuild.buildTime).toLocaleString()}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-xs items-center">
+                    <span className="text-muted-foreground">Branch</span>
+                    <span>{BUNDLED_BUILD_INFO.branch}</span>
+                    <span>{serverBuild.branch}</span>
+                  </div>
+                </div>
+                {!buildsMatch && (
+                  <Alert>
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      Hard-refresh (Ctrl+Shift+R) to load the live server build, or trigger a fresh deploy on Linode (<code>docker pull</code> + restart).
+                    </AlertDescription>
+                  </Alert>
+                )}
               </motion.div>
             )}
           </CardContent>
