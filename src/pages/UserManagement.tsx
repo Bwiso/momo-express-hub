@@ -188,11 +188,16 @@ const UserManagement = () => {
 
       return { ...result, detachedCount };
     },
-    onSuccess: (_data, user) => {
+    onSuccess: (result, user) => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      const count = result?.detachedCount ?? 0;
       toast({
         title: "User deleted",
-        description: `${user.email || user.full_name} has been removed.`,
+        description:
+          `${user.email || user.full_name} has been removed.` +
+          (count > 0
+            ? ` ${count} batch reference${count === 1 ? "" : "s"} preserved in history.`
+            : ""),
       });
       setPendingDelete(null);
     },
