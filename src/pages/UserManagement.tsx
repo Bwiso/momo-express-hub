@@ -434,35 +434,56 @@ const UserManagement = () => {
             </DialogTitle>
             <DialogDescription>
               This permanently removes the user, their role, and their profile.
-              This action cannot be undone and will be recorded in the audit log.
+              Any batches they initiated or approved will be kept in history with
+              the user reference cleared. This action cannot be undone and will
+              be recorded in the audit log.
             </DialogDescription>
           </DialogHeader>
 
           {pendingDelete && (
-            <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">
-              <div className="font-medium">{pendingDelete.full_name}</div>
-              {pendingDelete.email && (
-                <div className="text-xs text-muted-foreground">
-                  {pendingDelete.email}
-                </div>
-              )}
-              {pendingDelete.role && (
-                <div className="mt-2">
-                  <Badge
-                    variant="outline"
-                    className={roleBadgeClass[pendingDelete.role]}
-                  >
-                    {roleLabel(pendingDelete.role)}
-                  </Badge>
-                </div>
-              )}
+            <div className="space-y-3">
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                <div className="font-medium">{pendingDelete.full_name}</div>
+                {pendingDelete.email && (
+                  <div className="text-xs text-muted-foreground">
+                    {pendingDelete.email}
+                  </div>
+                )}
+                {pendingDelete.role && (
+                  <div className="mt-2">
+                    <Badge
+                      variant="outline"
+                      className={roleBadgeClass[pendingDelete.role]}
+                    >
+                      {roleLabel(pendingDelete.role)}
+                    </Badge>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">
+                  Type <span className="font-mono text-destructive">DELETE</span> to confirm
+                </label>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="DELETE"
+                  className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  autoFocus
+                />
+              </div>
             </div>
           )}
 
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setPendingDelete(null)}
+              onClick={() => {
+                setPendingDelete(null);
+                setDeleteConfirmText("");
+              }}
               disabled={deleteUser.isPending}
             >
               Cancel
@@ -470,7 +491,11 @@ const UserManagement = () => {
             <Button
               variant="destructive"
               onClick={() => pendingDelete && deleteUser.mutate(pendingDelete)}
-              disabled={!pendingDelete || deleteUser.isPending}
+              disabled={
+                !pendingDelete ||
+                deleteUser.isPending ||
+                deleteConfirmText !== "DELETE"
+              }
             >
               {deleteUser.isPending ? (
                 <>
