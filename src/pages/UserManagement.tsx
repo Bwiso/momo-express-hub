@@ -201,6 +201,7 @@ const UserManagement = () => {
             : ""),
       });
       setPendingDelete(null);
+      setDeleteConfirmText("");
     },
     onError: (err: Error) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
