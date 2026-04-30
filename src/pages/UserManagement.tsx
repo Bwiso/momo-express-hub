@@ -62,6 +62,7 @@ const UserManagement = () => {
   const queryClient = useQueryClient();
   const [pending, setPending] = useState<PendingChange | null>(null);
   const [pendingDelete, setPendingDelete] = useState<UserWithRole | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
   const { data: users, isLoading } = useQuery({
     queryKey: ["admin-users"],
@@ -148,27 +149,59 @@ const UserManagement = () => {
       } as never);
       if (error) throw error;
 
+      const result = (data ?? {}) as {
+        email?: string | null;
+        full_name?: string | null;
+        previous_role?: string | null;
+        detached_initiated_batch_ids?: string[];
+        detached_approved_batch_ids?: string[];
+        detached_batch_count?: number;
+      };
+
+      const initiated = result.detached_initiated_batch_ids ?? [];
+      const approved = result.detached_approved_batch_ids ?? [];
+      const detachedCount =
+        result.detached_batch_count ?? initiated.length + approved.length;
+
+      const emailLabel = result.email || user.email || user.full_name;
+
       await supabase.from("audit_logs").insert({
-        action: `User deleted: ${user.email || user.full_name}`,
+        action:
+          `User deleted: ${emailLabel}` +
+          (detachedCount > 0
+            ? ` (preserved ${detachedCount} batch reference${detachedCount === 1 ? "" : "s"})`
+            : ""),
         action_type: "config",
         user_name: "Super Admin",
         user_role: "super_admin",
         details: {
           target_user_id: user.user_id,
-          target_email: user.email,
-          previous_role: user.role,
+          target_email: result.email ?? user.email,
+          target_full_name: result.full_name ?? user.full_name,
+          previous_role: result.previous_role ?? user.role,
+          preserved_batches: {
+            count: detachedCount,
+            initiated_batch_ids: initiated,
+            approved_batch_ids: approved,
+          },
         },
       });
 
-      return data;
+      return { ...result, detachedCount };
     },
-    onSuccess: (_data, user) => {
+    onSuccess: (result, user) => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      const count = result?.detachedCount ?? 0;
       toast({
         title: "User deleted",
-        description: `${user.email || user.full_name} has been removed.`,
+        description:
+          `${user.email || user.full_name} has been removed.` +
+          (count > 0
+            ? ` ${count} batch reference${count === 1 ? "" : "s"} preserved in history.`
+            : ""),
       });
       setPendingDelete(null);
+      setDeleteConfirmText("");
     },
     onError: (err: Error) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -393,7 +426,12 @@ const UserManagement = () => {
       {/* Delete confirmation dialog */}
       <Dialog
         open={!!pendingDelete}
-        onOpenChange={(open) => !open && setPendingDelete(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingDelete(null);
+            setDeleteConfirmText("");
+          }
+        }}
       >
         <DialogContent>
           <DialogHeader>
@@ -403,35 +441,56 @@ const UserManagement = () => {
             </DialogTitle>
             <DialogDescription>
               This permanently removes the user, their role, and their profile.
-              This action cannot be undone and will be recorded in the audit log.
+              Any batches they initiated or approved will be kept in history with
+              the user reference cleared. This action cannot be undone and will
+              be recorded in the audit log.
             </DialogDescription>
           </DialogHeader>
 
           {pendingDelete && (
-            <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">
-              <div className="font-medium">{pendingDelete.full_name}</div>
-              {pendingDelete.email && (
-                <div className="text-xs text-muted-foreground">
-                  {pendingDelete.email}
-                </div>
-              )}
-              {pendingDelete.role && (
-                <div className="mt-2">
-                  <Badge
-                    variant="outline"
-                    className={roleBadgeClass[pendingDelete.role]}
-                  >
-                    {roleLabel(pendingDelete.role)}
-                  </Badge>
-                </div>
-              )}
+            <div className="space-y-3">
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                <div className="font-medium">{pendingDelete.full_name}</div>
+                {pendingDelete.email && (
+                  <div className="text-xs text-muted-foreground">
+                    {pendingDelete.email}
+                  </div>
+                )}
+                {pendingDelete.role && (
+                  <div className="mt-2">
+                    <Badge
+                      variant="outline"
+                      className={roleBadgeClass[pendingDelete.role]}
+                    >
+                      {roleLabel(pendingDelete.role)}
+                    </Badge>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">
+                  Type <span className="font-mono text-destructive">DELETE</span> to confirm
+                </label>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="DELETE"
+                  className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  autoFocus
+                />
+              </div>
             </div>
           )}
 
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setPendingDelete(null)}
+              onClick={() => {
+                setPendingDelete(null);
+                setDeleteConfirmText("");
+              }}
               disabled={deleteUser.isPending}
             >
               Cancel
@@ -439,7 +498,11 @@ const UserManagement = () => {
             <Button
               variant="destructive"
               onClick={() => pendingDelete && deleteUser.mutate(pendingDelete)}
-              disabled={!pendingDelete || deleteUser.isPending}
+              disabled={
+                !pendingDelete ||
+                deleteUser.isPending ||
+                deleteConfirmText !== "DELETE"
+              }
             >
               {deleteUser.isPending ? (
                 <>
