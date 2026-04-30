@@ -62,6 +62,7 @@ const UserManagement = () => {
   const queryClient = useQueryClient();
   const [pending, setPending] = useState<PendingChange | null>(null);
   const [pendingDelete, setPendingDelete] = useState<UserWithRole | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
   const { data: users, isLoading } = useQuery({
     queryKey: ["admin-users"],
