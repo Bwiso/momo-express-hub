@@ -148,19 +148,45 @@ const UserManagement = () => {
       } as never);
       if (error) throw error;
 
+      const result = (data ?? {}) as {
+        email?: string | null;
+        full_name?: string | null;
+        previous_role?: string | null;
+        detached_initiated_batch_ids?: string[];
+        detached_approved_batch_ids?: string[];
+        detached_batch_count?: number;
+      };
+
+      const initiated = result.detached_initiated_batch_ids ?? [];
+      const approved = result.detached_approved_batch_ids ?? [];
+      const detachedCount =
+        result.detached_batch_count ?? initiated.length + approved.length;
+
+      const emailLabel = result.email || user.email || user.full_name;
+
       await supabase.from("audit_logs").insert({
-        action: `User deleted: ${user.email || user.full_name}`,
+        action:
+          `User deleted: ${emailLabel}` +
+          (detachedCount > 0
+            ? ` (preserved ${detachedCount} batch reference${detachedCount === 1 ? "" : "s"})`
+            : ""),
         action_type: "config",
         user_name: "Super Admin",
         user_role: "super_admin",
         details: {
           target_user_id: user.user_id,
-          target_email: user.email,
-          previous_role: user.role,
+          target_email: result.email ?? user.email,
+          target_full_name: result.full_name ?? user.full_name,
+          previous_role: result.previous_role ?? user.role,
+          preserved_batches: {
+            count: detachedCount,
+            initiated_batch_ids: initiated,
+            approved_batch_ids: approved,
+          },
         },
       });
 
-      return data;
+      return { ...result, detachedCount };
     },
     onSuccess: (_data, user) => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
