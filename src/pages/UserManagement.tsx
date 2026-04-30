@@ -426,7 +426,12 @@ const UserManagement = () => {
       {/* Delete confirmation dialog */}
       <Dialog
         open={!!pendingDelete}
-        onOpenChange={(open) => !open && setPendingDelete(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingDelete(null);
+            setDeleteConfirmText("");
+          }
+        }}
       >
         <DialogContent>
           <DialogHeader>
